@@ -9,6 +9,8 @@ import com.example.ITTools.infrastructure.entrypoints.Server.Repositories.AgentR
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,26 +25,33 @@ public class AgentService {
     @Autowired
     private AuditService auditService;
 
+
+
+
     public List<AgentDTO> getAllServers(){
         List<AgentModel> servers = serverRepository.findAll();
         return servers.stream().map(AgentModel::toDTO).collect(Collectors.toList());
 
     }
+    //METODO PARA TRAER EL AGENTE POR EL ID
     public AgentDTO getServerById(int id) {
         AgentModel server = serverRepository.findById(id).orElseThrow(() -> new RuntimeException("Server not found"));
         return server.toDTO();
     }
 
+    //METODO PARA CREAR UN AGENTE
     public AgentDTO createServer(AgentDTO serverDTO, HttpServletRequest request) {
+        //VALIDACION PARA REGISTRAR EL ID DE LA REGION
         if (serverDTO.getRegionId() == null) {
             throw new IllegalArgumentException("Region ID must not be null");
         }
 
+        //VALIDACION POR SI LA REGION NO EXISTE
         Optional<RegionModel> optionalRegion = regionService.getRegionById(serverDTO.getRegionId());
         if (optionalRegion.isEmpty()) {
             throw new RuntimeException("Region not found with id " + serverDTO.getRegionId());
         }
-
+       // VALIDACION PARA SABER SI LA REGION ESTA ACTIVA
         RegionModel region = optionalRegion.get();
         if (region.getStatus() != 1) {
             throw new RuntimeException("Region is not active.");
@@ -61,10 +70,13 @@ public class AgentService {
         serverModel.setRegion(region);
 
         AgentModel savedServer = serverRepository.save(serverModel);
-        auditService.audit("Create Agent: "+ savedServer.getAgentName(), request);
+        auditService.audit("Create Agent: "+ savedServer.getAgentName() + ", id " +savedServer.getIdAgent(), request);
 
         return savedServer.toDTO();
     }
+
+    //metodo para traer los AGENTES SEGUN LA REGION
+
     public List<AgentDTO> getServersByRegion(Long idRegion) {
         List<AgentModel> agents = serverRepository.findByRegion_IdRegion(idRegion);
         return agents.stream()
@@ -73,7 +85,7 @@ public class AgentService {
     }
 
 
-
+//metodo para editar el Agente
     public AgentDTO updateServer(int id, AgentDTO serverDTO, HttpServletRequest request) {
         AgentModel server = serverRepository.findById(id).orElseThrow(() -> new RuntimeException("Server not found"));
 
@@ -91,7 +103,7 @@ public class AgentService {
 
         AgentModel updatedServer = serverRepository.save(server);
 
-         auditService.audit("Agent Update: "+ updatedServer.getAgentName()+ updatedServer.getIPAgent(), request);
+         auditService.audit("Agent Update: "+ updatedServer.getAgentName() + ", id "+ updatedServer.getIdAgent(), request);
         return updatedServer.toDTO();
     }
     public void updateServerStatus(int id, HttpServletRequest request) {
@@ -102,7 +114,7 @@ public class AgentService {
         server.setStatus(server.getStatus() == 1 ? 0 : 1);
 
         // Guardar el servidor actualizado
-        auditService.audit("update Agent Status: "+ id, request);
+        auditService.audit("update Agent Status: "+ server.getAgentName() + ", id "+ id , request);
         serverRepository.save(server);
     }
     public AgentDTO deleteAgent(int idAgent, HttpServletRequest request) {
@@ -111,7 +123,7 @@ public class AgentService {
 
         serverRepository.deleteById(idAgent);
 
-        auditService.audit("Delete Agent: " + agent.getAgentName(), request);
+        auditService.audit("Delete Agent: " + agent.getAgentName()+ ", id "+ agent.getIdAgent(), request);
 
         // Convertir el modelo a DTO antes de devolver
         return agent.toDTO();

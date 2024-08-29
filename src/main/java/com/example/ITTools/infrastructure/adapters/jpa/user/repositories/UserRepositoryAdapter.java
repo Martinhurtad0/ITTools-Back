@@ -52,7 +52,7 @@ public class UserRepositoryAdapter implements UserRepository {
         UserEntity entity = mapToEntity(user);
         UserEntity savedEntity = jpaUserRepository.save(entity);
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        auditService.audit("UPDATE_USER: " + savedEntity.getUsername(), request);
+        auditService.audit("Update User: " + savedEntity.getUsername() , request);
         return mapToDomain(savedEntity);
     }
 
@@ -86,7 +86,7 @@ public class UserRepositoryAdapter implements UserRepository {
         jpaUserRepository.deleteById(id);
 
         // Registrar la auditoría
-        auditService.audit("DELETE_USER: " + user.getUsername(), request);
+        auditService.audit("Delete User: " + user.getUsername() , request);
     }
 
 

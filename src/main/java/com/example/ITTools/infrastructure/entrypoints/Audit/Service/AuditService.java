@@ -1,6 +1,6 @@
 package com.example.ITTools.infrastructure.entrypoints.Audit.Service;
 
-import com.example.ITTools.infrastructure.entrypoints.Audit.DTO.AuditDTO;
+
 import com.example.ITTools.infrastructure.entrypoints.Audit.Model.AuditModel;
 import com.example.ITTools.infrastructure.entrypoints.Audit.Repository.AuditRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
