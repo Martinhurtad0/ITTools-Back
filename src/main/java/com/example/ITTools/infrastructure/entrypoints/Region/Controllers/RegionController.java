@@ -70,13 +70,14 @@ public class RegionController {
             RegionDTO deletedRegion = regionService.deleteRegion(idRegion, request);
             return new ResponseEntity<>(deletedRegion, HttpStatus.OK);
         } catch (IllegalStateException e) {
-            // Manejar el caso en que la región tiene servidores o agentes asociados
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            // Envía el mensaje de error en el cuerpo de la respuesta
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
         } catch (RuntimeException e) {
-            // Manejar cualquier otro error (por ejemplo, si la región no se encuentra)
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
+
+
 
     @PatchMapping("/status/{id}")
     public ResponseEntity<Void> updateRegionStatus(@PathVariable Long id, @RequestParam int status, HttpServletRequest request) {

@@ -102,7 +102,7 @@ public class JpaUserRepositoryAdapter implements AuthRepositoryPort {
     public void register(SaveUserDTO saveUserDTO) {
         // Verificar si el usuario ya existe
         if (userRepo.findByUsername(saveUserDTO.getEmail()).isPresent()) {
-            throw new UnsupportedOperationException("Email " + saveUserDTO.getEmail() + " exists");
+            throw new UnsupportedOperationException("The email " + saveUserDTO.getEmail() + " already exists");
         }
 
         // Crear un nuevo usuario
@@ -137,7 +137,7 @@ public class JpaUserRepositoryAdapter implements AuthRepositoryPort {
         UserEntity savedUser = userRepo.save(user);
 
         // Registrar la auditoría
-        auditService.audit("Register User : " + savedUser.getUsername() , request);
+        auditService.audit("Create User : " + savedUser.getUsername() , request);
     }
 
 

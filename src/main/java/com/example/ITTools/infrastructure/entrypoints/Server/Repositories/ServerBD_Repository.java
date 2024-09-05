@@ -8,5 +8,6 @@ import org.springframework.stereotype.Repository;
 
 public interface ServerBD_Repository extends JpaRepository<ServerBD_Model, Integer> {
     boolean existsByRegion_IdRegion(Long idRegion);
-
+    boolean existsByServerName(String serverName);
+    boolean existsByIpServer(String ipServer);
 }

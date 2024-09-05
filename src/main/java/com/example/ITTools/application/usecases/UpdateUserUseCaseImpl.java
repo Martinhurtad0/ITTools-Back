@@ -55,7 +55,7 @@ public class UpdateUserUseCaseImpl implements UpdateUser {
             user.setAuthorities(roles);
 
             // Guarda el usuario actualizado
-            User updatedUser = userRepository.save(user);
+            User updatedUser = userRepository.update(user);
             return mapToDTO(updatedUser);
         } else {
             throw new UsernameNotFoundException("User not found with ID: " + id);

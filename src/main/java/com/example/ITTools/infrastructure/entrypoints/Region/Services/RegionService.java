@@ -2,6 +2,7 @@ package com.example.ITTools.infrastructure.entrypoints.Region.Services;
 
 import com.example.ITTools.infrastructure.entrypoints.Audit.Service.AuditService;
 import com.example.ITTools.infrastructure.entrypoints.Region.DTO.RegionDTO;
+import com.example.ITTools.infrastructure.entrypoints.Region.Exeption.RegionYaExisteException;
 import com.example.ITTools.infrastructure.entrypoints.Region.Models.RegionModel;
 import com.example.ITTools.infrastructure.entrypoints.Region.Repositories.RegionRepository;
 import com.example.ITTools.infrastructure.entrypoints.Server.Repositories.AgentRepository;
@@ -41,14 +42,14 @@ public class RegionService {
         // Verificar si la región ya existe
         if (regionRepository.findByNameRegion(region.getNameRegion()).isPresent()) {
             // Lanzar una RuntimeException con un mensaje claro
-            throw new RuntimeException("The region already exists: " + region.getNameRegion());
+            throw new RuntimeException("The region " + region.getNameRegion() + " already exists");
         }
 
         region.setStatus(1); // Al crear, la región está activa
         RegionModel createdRegion = regionRepository.save(region);
 
         // Registrar la auditoría
-        auditService.audit("Create Región: " + createdRegion.getNameRegion() + ", id " + createdRegion.getIdRegion(), request);
+        auditService.audit("Create Region: " + createdRegion.getNameRegion() + ", id " + createdRegion.getIdRegion(), request);
 
         return createdRegion;
     }
@@ -62,9 +63,15 @@ public class RegionService {
         RegionModel region = regionRepository.findById(idRegion)
                 .orElseThrow(() -> new RuntimeException("Region not found with id " + idRegion));
 
-        if (regionDetails.getNameRegion() != null) {
+        // Verificar si el nombre de la región ya existe en otro registro
+        if (regionDetails.getNameRegion() != null && !region.getNameRegion().equals(regionDetails.getNameRegion())) {
+            boolean nameExists = regionRepository.existsByNameRegion(regionDetails.getNameRegion());
+            if (nameExists) {
+                throw new RegionYaExisteException("The region " + regionDetails.getNameRegion() + " already exists");
+            }
             region.setNameRegion(regionDetails.getNameRegion());
         }
+
         if (regionDetails.getDescription() != null) {
             region.setDescription(regionDetails.getDescription());
         }
@@ -73,7 +80,7 @@ public class RegionService {
         RegionModel updatedRegion = regionRepository.save(region);
 
         // Registrar la auditoría
-        auditService.audit("Update Región: " + updatedRegion.getNameRegion() + ", id " + updatedRegion.getIdRegion(), request);
+        auditService.audit("Update Region: " + updatedRegion.getNameRegion() + ", id " + updatedRegion.getIdRegion(), request);
 
         return updatedRegion;
     }
@@ -112,6 +119,8 @@ public class RegionService {
 
         return deleteRegion.toDTO();
     }
+
+
 
 
 }

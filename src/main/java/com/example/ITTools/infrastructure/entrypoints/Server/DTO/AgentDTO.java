@@ -8,7 +8,7 @@ import lombok.Setter;
 public class AgentDTO {
     private int idAgent;
     private String agentName;
-    private String ipAgent;
+    private String IPAgent;
     private String webServiceUrl;
     private String pathArchive;
     private int status;
