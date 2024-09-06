@@ -8,6 +8,7 @@ import com.example.ITTools.domain.ports.out.auth.AuthRepositoryPort;
 import com.example.ITTools.infrastructure.adapters.jpa.user.repositories.JpaUserRepositoryAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 public class AuthRepositoryConfig {
@@ -44,5 +45,9 @@ public class AuthRepositoryConfig {
     @Bean
     public GoogleAuthUseCaseImpl googleAuthUseCaseImpl(AuthRepositoryPort authRepositoryPort) {
         return new GoogleAuthUseCaseImpl(authRepositoryPort);
+    }
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }
