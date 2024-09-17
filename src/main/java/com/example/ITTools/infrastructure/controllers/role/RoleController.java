@@ -5,6 +5,7 @@ import com.example.ITTools.application.usecases.roles.GetRolesUseCase;
 import com.example.ITTools.application.usecases.roles.RegisterRolesUseCase;
 import com.example.ITTools.application.usecases.roles.UpdateRolesUseCase;
 import com.example.ITTools.domain.ports.in.auth.dtos.RolesDTO;
+import com.example.ITTools.infrastructure.adapters.jpa.role.repositories.RoleRepositoryAdapter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -47,14 +48,32 @@ public class RoleController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RolesDTO> updateRole(@PathVariable UUID id, @RequestBody RolesDTO roleDTO) {
-        RolesDTO updatedRole = updateRolesUseCase.updateRole(id, roleDTO);
-        return new ResponseEntity<>(updatedRole, HttpStatus.OK);
+    public ResponseEntity<Object> updateRole(@PathVariable UUID id, @RequestBody RolesDTO roleDTO) {
+        try {
+            RolesDTO updatedRole = updateRolesUseCase.updateRole(id, roleDTO);
+            return new ResponseEntity<>(updatedRole, HttpStatus.OK);
+        } catch (RoleRepositoryAdapter.RoleAlreadyExistsException e) {
+            // Retornar 409 Conflict con mensaje de error
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (RuntimeException e) {
+            // Retornar 404 Not Found u otro estado según la excepción
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
+
+
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRole(@PathVariable UUID id) {
-        deleteRolesUseCase.deleteRole(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<String> deleteRole(@PathVariable UUID id) {
+        try {
+            deleteRolesUseCase.deleteRole(id);
+            return ResponseEntity.noContent().build();
+        } catch (RoleRepositoryAdapter.RoleInUseException e) {
+            // Retornar 409 Conflict con un mensaje explicativo en el cuerpo
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
+
+
 }

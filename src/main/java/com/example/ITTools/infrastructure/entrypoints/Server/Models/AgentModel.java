@@ -21,7 +21,7 @@ public class AgentModel {
 
     @Column(nullable = false)
     @Getter @Setter
-    private String iPAgent;
+    private String IPAgent;
 
     @Column(nullable = false)
     @Getter @Setter
@@ -44,7 +44,7 @@ public class AgentModel {
         AgentDTO dto = new AgentDTO();
         dto.setIdAgent(this.idAgent);
         dto.setAgentName(this.agentName);
-        dto.setIpAgent(this.iPAgent);
+        dto.setIPAgent(this.IPAgent);
         dto.setWebServiceUrl(this.webServiceUrl);
         dto.setPathArchive(this.pathArchive);
         dto.setStatus(this.status);

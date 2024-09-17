@@ -20,7 +20,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginDTO loginDTO) {
         try {
-            String token = iAuthRepo.login(loginDTO);
+            String token = iAuthRepo.login(loginDTO); // Aquí JwtService generará una nueva secret key
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + token);
             return ResponseEntity.ok().headers(headers).body(token);
@@ -35,7 +35,7 @@ public class AuthController {
             iAuthRepo.register(user);
             return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Registration failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -50,6 +50,4 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Google authentication failed: " + e.getMessage());
         }
     }
-
-
 }

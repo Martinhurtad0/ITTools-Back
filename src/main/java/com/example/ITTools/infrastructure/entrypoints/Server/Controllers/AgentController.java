@@ -33,23 +33,28 @@ public class AgentController {
 
     // Crear un nuevo servidor
     @PostMapping("/register")
-    public ResponseEntity<AgentDTO> createServer(@RequestBody AgentDTO serverDTO, HttpServletRequest request) {
-        AgentDTO createdServer = serverService.createServer(serverDTO,request);
-        return ResponseEntity.ok(createdServer);
+    public ResponseEntity<?> createServer(@RequestBody AgentDTO serverDTO, HttpServletRequest request) {
+        try {
+            AgentDTO createdServer = serverService.createServer(serverDTO, request);
+            return ResponseEntity.ok(createdServer);
+        } catch (IllegalArgumentException e) {
+            // Maneja el caso de nombre o IP duplicado
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            // Maneja otros errores
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
+
 
     // Actualizar un servidor existente
     @PutMapping("/{id}")
     public ResponseEntity<AgentDTO> updateServer(@PathVariable int id, @RequestBody AgentDTO serverDTO, HttpServletRequest request) {
-        try {
-            AgentDTO updatedServer = serverService.updateServer(id, serverDTO, request);
-            return new ResponseEntity<>(updatedServer, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-        }
-
-        
+        AgentDTO updatedServer = serverService.updateServer(id, serverDTO, request);
+        return new ResponseEntity<>(updatedServer, HttpStatus.OK);
     }
+
+
     @GetMapping("/region/{idRegion}")
     public ResponseEntity<List<AgentDTO>> getServersByRegion(@PathVariable Long idRegion) {
         try {

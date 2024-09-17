@@ -1,40 +1,37 @@
 package com.example.ITTools.infrastructure.config.security;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-
-import static org.springframework.security.config.Customizer.withDefaults;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtDecoder jwtDecoder;
-
-    public SecurityConfig(JwtDecoder jwtDecoder) {
-        this.jwtDecoder = jwtDecoder;
-    }
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;  // Filtro personalizado para JWT
+    private final AuthenticationProvider authProvider;              // AuthenticationProvider configurado
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorizeRequests ->
-                        authorizeRequests
-                                .requestMatchers("/auth/login", "/auth/login/google").permitAll() // Permitir acceso sin autenticación
-                                .anyRequest().authenticated() // Requiere autenticación para cualquier otra solicitud
+        return http
+                .csrf(csrf -> csrf.disable())  // Deshabilitar CSRF si estás usando tokens JWT
+                .authorizeHttpRequests(authRequest -> authRequest
+                        .requestMatchers("/auth/login/**").permitAll()  // Permitir acceso a login sin autenticación
+                        .anyRequest().authenticated()  // Cualquier otra solicitud debe estar autenticada
                 )
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt -> jwt.decoder(jwtDecoder))
-                );
-
-        return http.build();
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // Sin estado para usar JWT
+                )
+                .authenticationProvider(authProvider)  // Proveedor de autenticación
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)  // Filtro JWT antes del UsernamePasswordAuthenticationFilter
+                .build();
     }
-}
 
+}

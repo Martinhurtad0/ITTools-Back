@@ -45,21 +45,25 @@ public class UserRepositoryAdapter implements UserRepository {
     public Optional<User> findById(UUID id) {
         return jpaUserRepository.findById(id).map(this::mapToDomain);
     }
-
-    @Override
-
-    public User save(User user) {
-        UserEntity entity = mapToEntity(user);
-        UserEntity savedEntity = jpaUserRepository.save(entity);
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        auditService.audit("Update User: " + savedEntity.getUsername() , request);
-        return mapToDomain(savedEntity);
+    public class EmailAlreadyExistsException extends RuntimeException {
+        public EmailAlreadyExistsException(String email) {
+            super("The email " + email + " already exists");
+        }
     }
 
     @Override
     public User update(User user) {
+        // Verificar si el usuario que se quiere actualizar existe
         UserEntity existingEntity = jpaUserRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Verificar si el email ha cambiado y ya está en uso por otro usuario
+        if (!existingEntity.getUsername().equals(user.getUsername())) {
+            Optional<UserEntity> existingEmailUser = jpaUserRepository.findByUsername(user.getUsername());
+            if (existingEmailUser.isPresent() && !existingEmailUser.get().getId().equals(user.getId())) {
+                throw new EmailAlreadyExistsException(user.getUsername());
+            }
+        }
 
         // Actualizar los campos existentes con los datos proporcionados
         existingEntity.setUsername(user.getUsername());
@@ -70,11 +74,18 @@ public class UserRepositoryAdapter implements UserRepository {
         existingEntity.setStatus(user.isStatus());
         existingEntity.setAuthorities(mapRoles(user.getAuthorities()));
 
+        // Guardar el usuario actualizado
         UserEntity updatedEntity = jpaUserRepository.save(existingEntity);
+
+        // Registrar la auditoría
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        auditService.audit("UPDATE_USER: " + updatedEntity.getUsername(), request);
+        auditService.audit("Update User: " + updatedEntity.getUsername(), request);
+
+        // Convertir la entidad actualizada de nuevo a un objeto de dominio
         return mapToDomain(updatedEntity);
     }
+
+
 
     @Override
     public void delete(UUID id) {

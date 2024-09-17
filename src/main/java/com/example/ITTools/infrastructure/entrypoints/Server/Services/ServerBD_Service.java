@@ -36,6 +36,9 @@ public class ServerBD_Service {
     }
 
     public ServerBD_DTO createServer(ServerBD_DTO serverDTO, HttpServletRequest request) {
+        // Verificar valor del IP
+        System.out.println("Received IP: " + serverDTO.getIpServer());
+
         if (serverDTO.getRegionId() == null) {
             throw new IllegalArgumentException("Region ID must not be null");
         }
@@ -50,10 +53,21 @@ public class ServerBD_Service {
             throw new RuntimeException("Region is not active.");
         }
 
+        // Validar IP y nombre de servidor
         if (serverDTO.getIpServer() == null || serverDTO.getIpServer().isEmpty()) {
             throw new IllegalArgumentException("Server IP cannot be empty");
         }
 
+        // Validaciones de unicidad con mensajes específicos
+        if (serverRepository.existsByServerName(serverDTO.getServerName())) {
+            throw new IllegalArgumentException("The server " + serverDTO.getServerName() + " already exists");
+        }
+
+        if (serverRepository.existsByIpServer(serverDTO.getIpServer())) {
+            throw new IllegalArgumentException("Server with the IP " + serverDTO.getIpServer() + " already exists");
+        }
+
+        // Creación del servidor
         ServerBD_Model serverModel = new ServerBD_Model();
         serverModel.setServerName(serverDTO.getServerName());
         serverModel.setDescription(serverDTO.getDescription());
@@ -68,13 +82,29 @@ public class ServerBD_Service {
         serverModel.setRegion(region);
 
         ServerBD_Model savedServer = serverRepository.save(serverModel);
-        auditService.audit("Create ServerDB: "+ savedServer.getServerName() + ", id "+savedServer.getIdServer(),request);
+        auditService.audit("Create ServerDB: " + savedServer.getServerName() + ", id " + savedServer.getIdServer(), request);
         return savedServer.toDTO();
     }
 
-    public ServerBD_DTO updateServer(int id, ServerBD_DTO serverDTO, HttpServletRequest request) {
-        ServerBD_Model server = serverRepository.findById(id).orElseThrow(() -> new RuntimeException("Server not found"));
 
+
+
+    public ServerBD_DTO updateServer(int id, ServerBD_DTO serverDTO, HttpServletRequest request) {
+        ServerBD_Model server = serverRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+
+        // Validaciones de unicidad con mensajes específicos
+        if (!server.getServerName().equals(serverDTO.getServerName()) &&
+                serverRepository.existsByServerName(serverDTO.getServerName())) {
+            throw new IllegalArgumentException("The server " + serverDTO.getServerName() + " already exists");
+        }
+
+        if (!server.getIpServer().equals(serverDTO.getIpServer()) &&
+                serverRepository.existsByIpServer(serverDTO.getIpServer())) {
+            throw new IllegalArgumentException("Server with the IP " + serverDTO.getIpServer() + " already exists");
+        }
+
+        // Actualización del servidor
         server.setServerName(serverDTO.getServerName());
         server.setIpServer(serverDTO.getIpServer());
         server.setInstance(serverDTO.getInstance());
@@ -90,9 +120,10 @@ public class ServerBD_Service {
         }
 
         ServerBD_Model updatedServer = serverRepository.save(server);
-        auditService.audit("Update ServerDB: "+ updatedServer.getServerName() + ", id "+updatedServer.getIdServer(), request);
+        auditService.audit("Update ServerDB: " + updatedServer.getServerName() + ", id " + updatedServer.getIdServer(), request);
         return updatedServer.toDTO();
     }
+
 
     public void updateServerStatus(int id, HttpServletRequest request) {
         // Recuperar el servidor por ID

@@ -5,6 +5,7 @@ import com.example.ITTools.infrastructure.entrypoints.Server.DTO.ServerBD_DTO;
 import com.example.ITTools.infrastructure.entrypoints.Server.Services.ServerBD_Service;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,18 +30,34 @@ public class ServerBD_Controller {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ServerBD_DTO> createServer(@RequestBody ServerBD_DTO serverDTO, HttpServletRequest request) {
-        ServerBD_DTO createdServer = serverService.createServer(serverDTO, request);
-        return ResponseEntity.ok(createdServer);
+    public ResponseEntity<String> createServer(@RequestBody ServerBD_DTO serverDTO, HttpServletRequest request) {
+        try {
+            ServerBD_DTO createdServer = serverService.createServer(serverDTO, request);
+            return ResponseEntity.ok("Server created successfully");
+        } catch (IllegalArgumentException e) {
+            // Manejo de excepciones específicas para errores de validación
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (RuntimeException e) {
+            // Manejo de excepciones generales
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ServerBD_DTO> updateServer(@PathVariable int id, @RequestBody ServerBD_DTO serverDTO,HttpServletRequest request) {
-        ServerBD_DTO updatedServer = serverService.updateServer(id, serverDTO,request );
-        return ResponseEntity.ok(updatedServer);
+    public ResponseEntity<String> updateServer(@PathVariable int id, @RequestBody ServerBD_DTO serverDTO, HttpServletRequest request) {
+        try {
+            ServerBD_DTO updatedServer = serverService.updateServer(id, serverDTO, request);
+            return ResponseEntity.ok("Server updated successfully");
+        } catch (IllegalArgumentException e) {
+            // Manejo de excepciones específicas para errores de validación
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (RuntimeException e) {
+            // Manejo de excepciones generales
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
-   @PatchMapping("/status/{id}")
+    @PatchMapping("/status/{id}")
     public ResponseEntity<Void> updateServerStatus(@PathVariable("id") int id, HttpServletRequest request) {
         try {
             serverService.updateServerStatus(id, request);

@@ -11,7 +11,9 @@ import java.util.List;
 public interface AgentRepository extends JpaRepository<AgentModel, Integer> {
     List<AgentModel> findByRegion_IdRegion(Long idRegion);
     boolean existsByRegion_IdRegion(Long idRegion);
-
+    boolean existsByAgentName(String agentName);
+    boolean existsByIPAgent(String IPAgent);
+    boolean existsByWebServiceUrl(String webServiceUrl);
 
 
 }
