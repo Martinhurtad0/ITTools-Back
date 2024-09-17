@@ -13,6 +13,8 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.*;
@@ -80,8 +82,6 @@ public class LogService {
         }
     }
 
-    // Método para descargar logs como ZIP desde el agente
-    // Método para descargar logs como ZIP desde el agente
     public byte[] downloadLogsAsZip(int agentId, String token, List<String> filenames) {
         Optional<AgentModel> agentOptional = agentRepository.findById(agentId);
         if (agentOptional.isEmpty()) {
@@ -89,13 +89,6 @@ public class LogService {
         }
 
         AgentModel agent = agentOptional.get();
-        String logPath = agent.getPathArchive();  // Ruta de logs
-
-        if (logPath == null || logPath.isEmpty()) {
-            throw new RuntimeException("Log path not configured for agent: " + agent.getAgentName());
-        }
-
-        // Construir la URL usando la ruta de los logs
         String apiUrl = UriComponentsBuilder.fromHttpUrl(agent.getWebServiceUrl() + "/download_logs")
                 .toUriString();
 
@@ -103,10 +96,7 @@ public class LogService {
         headers.set("Authorization", "Bearer " + token);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // Construir el cuerpo de la solicitud
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("filenames", filenames);
-
+        Map<String, Object> requestBody = Collections.singletonMap("filenames", filenames);
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
@@ -116,7 +106,15 @@ public class LogService {
             if (statusCode == 200) {
                 byte[] zipData = response.getBody();
                 if (zipData != null) {
-                    return zipData;
+                    // Guardar el archivo ZIP en el disco local
+                    String filePath = "C:/selected_logs.zip"; // Cambia la ruta según sea necesario
+                    try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                        fos.write(zipData);
+                        fos.flush();
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to save the ZIP file to disk: " + e.getMessage(), e);
+                    }
+                    return zipData; // Retorna los datos también si es necesario
                 } else {
                     throw new RuntimeException("No data received from agent: " + agent.getAgentName());
                 }
@@ -138,7 +136,6 @@ public class LogService {
             throw new RuntimeException("Failed to download logs from agent: " + agent.getAgentName(), e);
         }
     }
-
     // Método para cortar un log y descargarlo
     public byte[] cutLog(int agentId, String token, String logName) {
         Optional<AgentModel> agentOptional = agentRepository.findById(agentId);
@@ -206,7 +203,7 @@ public class LogService {
         }
 
         AgentModel agent = agentOptional.get();
-        String apiUrl = UriComponentsBuilder.fromHttpUrl(agent.getWebServiceUrl() + "/view")
+        String apiUrl = UriComponentsBuilder.fromHttpUrl(agent.getWebServiceUrl() + "/view_log")
                 .queryParam("file", logFileName)
                 .toUriString();
 
