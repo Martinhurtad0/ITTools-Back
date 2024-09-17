@@ -20,7 +20,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginDTO loginDTO) {
         try {
-            String token = iAuthRepo.login(loginDTO);
+            String token = iAuthRepo.login(loginDTO); // Aquí JwtService generará una nueva secret key
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + token);
             return ResponseEntity.ok().headers(headers).body(token);
@@ -50,6 +50,4 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Google authentication failed: " + e.getMessage());
         }
     }
-
-
 }

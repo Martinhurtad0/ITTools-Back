@@ -20,9 +20,16 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY="586E3272357538782F413F4428472B4B6250655368566B597033733676397924";
+    // Genera una nueva secret key en cada request
+    private String secretKey;
+
+    public JwtService() {
+        this.secretKey = SecretKeyGenerator.generateKey();
+    }
 
     public String getToken(UserDetails user) {
+        // Cada vez que se llama a login, genera una nueva secret key
+        this.secretKey = SecretKeyGenerator.generateKey();
         return getToken(new HashMap<>(), user);
     }
 
@@ -32,14 +39,13 @@ public class JwtService {
                 .setClaims(extraClaims)
                 .setSubject(user.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 8))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-
     private Key getKey() {
-        byte[] keyBytes=Decoders.BASE64.decode(SECRET_KEY);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -48,12 +54,11 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username=getUsernameFromToken(token);
-        return (username.equals(userDetails.getUsername())&& !isTokenExpired(token));
+        final String username = getUsernameFromToken(token);
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
-    private Claims getAllClaims(String token)
-    {
+    private Claims getAllClaims(String token) {
         return Jwts
                 .parserBuilder()
                 .setSigningKey(getKey())
@@ -62,21 +67,16 @@ public class JwtService {
                 .getBody();
     }
 
-
-    public <T> T getClaim(String token, Function<Claims,T> claimsResolver)
-    {
-        final Claims claims=getAllClaims(token);
+    public <T> T getClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = getAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    private Date getExpiration(String token)
-    {
+    private Date getExpiration(String token) {
         return getClaim(token, Claims::getExpiration);
     }
 
-    private boolean isTokenExpired(String token)
-    {
+    private boolean isTokenExpired(String token) {
         return getExpiration(token).before(new Date());
     }
-
 }
