@@ -4,6 +4,7 @@ import com.example.ITTools.infrastructure.entrypoints.Server.Models.AgentModel;
 import com.example.ITTools.infrastructure.entrypoints.Server.Repositories.AgentRepository;
 
 
+import com.google.api.client.auth.oauth2.TokenResponse;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -32,8 +33,25 @@ public class LogService {
         this.restTemplate = new RestTemplate();
     }
 
+    public String getToken(int agentId){
+        Optional<AgentModel> agentModelOptional = agentRepository.findById(agentId);
+        AgentModel agent = agentModelOptional.get();
+        String apiUrl = agent.getWebServiceUrl();
+        String url = apiUrl+"/get_token";
+        ResponseEntity<TokenResponse> response = restTemplate.getForEntity(url, TokenResponse.class);
+
+        if (response.getStatusCode().is2xxSuccessful()) {
+            return response.getBody().getAccessToken(); // Asegúrate de que TokenResponse tenga el método getAccessToken()
+        } else {
+            throw new RuntimeException("Error al obtener el token");
+        }
+
+    }
+
     // Método para obtener los logs del agente
-    public List<String> fetchLogsFromAgent(int agentId, String token) {
+    public List<String> fetchLogsFromAgent(int agentId) {
+        String token = getToken(agentId); // Obtén el token antes de hacer la solicitud
+
         Optional<AgentModel> agentOptional = agentRepository.findById(agentId);
         if (agentOptional.isEmpty()) {
             throw new RuntimeException("Agent not found with id " + agentId);
@@ -69,37 +87,38 @@ public class LogService {
         } catch (HttpClientErrorException e) {
             throw new RuntimeException("HTTP error while fetching logs from agent: " + agent.getAgentName() + " - " + e.getStatusCode() + ": " + e.getResponseBodyAsString(), e);
         } catch (ResourceAccessException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof SocketTimeoutException) {
-                throw new RuntimeException("Connection timed out while fetching logs from agent: " + agent.getAgentName(), e);
-            } else if (cause instanceof ConnectException) {
-                throw new RuntimeException("Failed to connect to the server while fetching logs from agent: " + agent.getAgentName(), e);
-            } else {
-                throw new RuntimeException("Failed to fetch logs from agent: " + agent.getAgentName(), e);
-            }
+            handleResourceAccessException(e, agent);
+            return null; // Esto nunca se alcanzará
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch logs from agent: " + agent.getAgentName(), e);
         }
     }
 
-    public byte[] downloadLogsAsZip(int agentId, String token, List<String> filenames) {
+    public byte[] downloadLogsAsZip(int agentId, List<String> filenames) {
+        String token = getToken(agentId); // Obtener el token
+
         Optional<AgentModel> agentOptional = agentRepository.findById(agentId);
         if (agentOptional.isEmpty()) {
             throw new RuntimeException("Agent not found with id " + agentId);
         }
 
         AgentModel agent = agentOptional.get();
+
+        // Construir la URL del API
         String apiUrl = UriComponentsBuilder.fromHttpUrl(agent.getWebServiceUrl() + "/download_logs")
                 .toUriString();
 
+        // Configurar los encabezados
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
+        // Crear el cuerpo de la solicitud
         Map<String, Object> requestBody = Collections.singletonMap("filenames", filenames);
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
+            // Hacer la solicitud POST al API
             ResponseEntity<byte[]> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, byte[].class);
             int statusCode = response.getStatusCodeValue();
 
@@ -136,8 +155,11 @@ public class LogService {
             throw new RuntimeException("Failed to download logs from agent: " + agent.getAgentName(), e);
         }
     }
-    // Método para cortar un log y descargarlo
-    public byte[] cutLog(int agentId, String token, String logName) {
+
+
+    public byte[] cutLog(int agentId, String logName) {
+        String token = getToken(agentId); // Obtener el token
+
         Optional<AgentModel> agentOptional = agentRepository.findById(agentId);
         if (agentOptional.isEmpty()) {
             throw new RuntimeException("Agent not found with id " + agentId);
@@ -157,23 +179,13 @@ public class LogService {
             throw new RuntimeException("HTTP error while cutting log from agent: " + agent.getAgentName() + " - " + e.getStatusCode(), e);
         } catch (ResourceAccessException e) {
             handleResourceAccessException(e, agent);
-        }
-        return null; // This line will never be reached
-    }
-
-    private void handleResourceAccessException(ResourceAccessException e, AgentModel agent) {
-        Throwable cause = e.getCause();
-        if (cause instanceof SocketTimeoutException) {
-            throw new RuntimeException("Connection timed out while accessing agent: " + agent.getAgentName(), e);
-        } else if (cause instanceof ConnectException) {
-            throw new RuntimeException("Failed to connect to the server while accessing agent: " + agent.getAgentName(), e);
-        } else {
-            throw new RuntimeException("Failed to access logs from agent: " + agent.getAgentName(), e);
+            return null; // Esto nunca se alcanzará
         }
     }
 
-    // Método para transmitir el contenido de un log en tiempo real
-    public ResponseEntity<String> streamLog(int agentId, String token, String logName) {
+    public ResponseEntity<String> streamLog(int agentId, String logName) {
+        String token = getToken(agentId); // Obtener el token
+
         Optional<AgentModel> agentOptional = agentRepository.findById(agentId);
         if (agentOptional.isEmpty()) {
             throw new RuntimeException("Agent not found with id " + agentId);
@@ -192,17 +204,20 @@ public class LogService {
             throw new RuntimeException("HTTP error while streaming log from agent: " + agent.getAgentName() + " - " + e.getStatusCode(), e);
         } catch (ResourceAccessException e) {
             handleResourceAccessException(e, agent);
+            return null; // Esto nunca se alcanzará
         }
-        return null; // This line will never be reached
     }
-    //Metdo para ver un log en especifico
-    public String fetchLogContent(int agentId, String token, String logFileName) {
+
+    public String fetchLogContent(int agentId, String logFileName) {
+        String token = getToken(agentId); // Obtener el token
+
         Optional<AgentModel> agentOptional = agentRepository.findById(agentId);
         if (agentOptional.isEmpty()) {
             throw new RuntimeException("Agent not found with id " + agentId);
         }
 
         AgentModel agent = agentOptional.get();
+
         String apiUrl = UriComponentsBuilder.fromHttpUrl(agent.getWebServiceUrl() + "/view_log")
                 .queryParam("file", logFileName)
                 .toUriString();
@@ -212,14 +227,38 @@ public class LogService {
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
-            ResponseEntity<String> response = restTemplate.exchange(apiUrl, HttpMethod.GET, entity, String.class);
+            ResponseEntity<String> response =
+                    restTemplate.exchange(apiUrl, HttpMethod.GET, entity, String.class);
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody();
             } else {
-                throw new RuntimeException("Failed to fetch log content from agent: " + agent.getAgentName());
+                throw new RuntimeException("Failed to fetch log content from agent: "
+                        +agent.getAgentName());
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Error while fetching log content from agent: " + agent.getAgentName(), e);
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("HTTP error while fetching log content from "
+                    +"agent: "+agent.getAgentName(),e);
+        } catch (ResourceAccessException e) {
+            handleResourceAccessException(e,agent);
+        }
+        return null; // Esto nunca se alcanzará
+    }
+
+    private void handleResourceAccessException(ResourceAccessException e,
+                                               AgentModel agent){
+        Throwable cause=e.getCause();
+        if(cause instanceof SocketTimeoutException){
+            throw new RuntimeException(
+                    "Connection timed out while accessing the server for "
+                            +"agent: "+agent.getAgentName(),e);
+        } else if(cause instanceof ConnectException){
+            throw new RuntimeException(
+                    "Failed to connect to the server for "
+                            +"agent: "+agent.getAgentName(),e);
+        } else {
+            throw new RuntimeException(
+                    "Failed to access logs for "
+                            +"agent: "+agent.getAgentName(),e);
         }
     }
 
