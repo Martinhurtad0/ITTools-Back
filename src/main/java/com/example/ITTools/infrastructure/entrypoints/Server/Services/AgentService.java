@@ -27,7 +27,6 @@ public class AgentService {
 
 
 
-
     public List<AgentDTO> getAllServers(){
         List<AgentModel> servers = serverRepository.findAll();
         return servers.stream().map(AgentModel::toDTO).collect(Collectors.toList());
