@@ -103,6 +103,39 @@
 			<artifactId>bcprov-jdk15on</artifactId>
 			<version>1.70</version> <!-- Reemplaza con la última versión disponible -->
 		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>5.2.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.2.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml-schemas</artifactId>
+			<version>4.1.2</version> <!-- Esta puede ser necesaria para ciertos formatos -->
+		</dependency>
+		<dependency>
+			<groupId>org.apache.xmlbeans</groupId>
+			<artifactId>xmlbeans</artifactId>
+			<version>5.0.3</version> <!-- Actualiza a la última versión -->
+		</dependency>
+
+		<!-- Para soporte adicional en la manipulación de archivos Excel -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.4</version> <!-- Versión más reciente -->
+		</dependency>
+
+
+
+
+
+
 	</dependencies>
 
 	<build>
