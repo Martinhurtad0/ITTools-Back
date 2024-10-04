@@ -3,9 +3,8 @@ package com.example.ITTools.infrastructure.entrypoints.Logs;
 import com.example.ITTools.infrastructure.entrypoints.Server.Services.AgentService;
 import com.example.ITTools.infrastructure.entrypoints.Server.DTO.AgentDTO;
 import com.example.ITTools.infrastructure.entrypoints.Audit.Service.AuditService;
-import jakarta.servlet.http.HttpServletRequest; // Import HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.expression.ParseException;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -25,12 +24,23 @@ public class ApiService {
     private AgentService agentService;
 
     @Autowired
-    private AuditService auditService; // Injecting AuditService
+    private AuditService auditService;
 
     @Autowired
-    private HttpServletRequest request; // To get the HTTP request context
+    private HttpServletRequest request;
 
-    // Método para obtener la URL del WebService de un agente
+    // Método para obtener el token JWT del servidor Flask
+    private String getJwtToken(String webServiceUrl) {
+        try {
+            ResponseEntity<Map> response = restTemplate.getForEntity(webServiceUrl + "/get_token", Map.class);
+            Map<String, String> responseBody = response.getBody();
+            return responseBody != null ? responseBody.get("access_token") : null;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get JWT token: " + e.getMessage());
+        }
+    }
+
+    // Método auxiliar para obtener la URL del agente
     private String getWebServiceUrl(int agentId) {
         AgentDTO agent = agentService.getServerById(agentId);
         if (agent == null || agent.getWebServiceUrl() == null || agent.getWebServiceUrl().isEmpty()) {
@@ -43,30 +53,27 @@ public class ApiService {
         String action = "Get Logs for Agent ID: " + agentId;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
-            String logs = restTemplate.getForObject(webServiceUrl + "/logs", String.class);
-            auditService.audit(action + " - Success", request); // Audit success
-            return logs;
-        } catch (HttpClientErrorException e) {
-            auditService.audit(action + " - Error: " + e.getStatusCode(), request); // Audit error
-            return "Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString();
-        } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request); // Audit error
-            return "Error: " + e.getMessage();
-        }
-    }
+            String token = getJwtToken(webServiceUrl);
 
-    public String getLogFile(int agentId, String filename) {
-        String action = "Get Log File for Agent ID: " + agentId + ", Filename: " + filename;
-        try {
-            String webServiceUrl = getWebServiceUrl(agentId);
-            String logFile = restTemplate.getForObject(webServiceUrl + "/logs/" + filename, String.class);
-            auditService.audit(action + " - Success", request); // Audit success
-            return logFile;
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);  // Añadir el token JWT a los encabezados
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    webServiceUrl + "/logs",
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            auditService.audit(action + " - Success", request);  // Audit success
+            return response.getBody();
         } catch (HttpClientErrorException e) {
-            auditService.audit(action + " - Error: " + e.getStatusCode(), request); // Audit error
+            auditService.audit(action + " - Error: " + e.getStatusCode(), request);  // Audit error
             return "Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString();
         } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request); // Audit error
+            auditService.audit(action + " - Error: " + e.getMessage(), request);  // Audit error
             return "Error: " + e.getMessage();
         }
     }
@@ -75,16 +82,17 @@ public class ApiService {
         String action = "Zip Log Files for Agent ID: " + agentId;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
-
-            // Crear el cuerpo de la solicitud con la lista de archivos
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("files", filenames);
+            String token = getJwtToken(webServiceUrl);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + token);  // Añadir el token JWT a los encabezados
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("files", filenames);
+
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-            // Realizar la llamada POST para zipear los archivos
             ResponseEntity<byte[]> response = restTemplate.exchange(
                     webServiceUrl + "/logs/zip",
                     HttpMethod.POST,
@@ -92,15 +100,14 @@ public class ApiService {
                     byte[].class
             );
 
-            // Preparar los encabezados para la respuesta
             HttpHeaders responseHeaders = new HttpHeaders();
             responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             responseHeaders.setContentDispositionFormData("attachment", "logs.zip");
 
-            auditService.audit(action + " - Success", request); // Auditoría exitosa
+            auditService.audit(action + " - Success", request);
             return new ResponseEntity<>(response.getBody(), responseHeaders, HttpStatus.OK);
         } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request); // Auditoría de error
+            auditService.audit(action + " - Error: " + e.getMessage(), request);
             return new ResponseEntity<>(("Error: " + e.getMessage()).getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -109,14 +116,34 @@ public class ApiService {
         String action = "Filter Logs by Date for Agent ID: " + agentId + ", Date: " + date;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
-            String filteredLogs = restTemplate.getForObject(webServiceUrl + "/logs/filter?date=" + date, String.class);
-            auditService.audit(action + " - Success", request); // Audit success
-            return filteredLogs;
+            String token = getJwtToken(webServiceUrl);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);  // Añadir el token JWT a los encabezados
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            AgentDTO agent = agentService.getServerById(agentId);
+            String logPath = agent.getPathArchive();
+
+            if (logPath == null || logPath.isEmpty()) {
+                throw new RuntimeException("Log path not found for agent ID: " + agentId);
+            }
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    webServiceUrl + "/logs/filter?date=" + date + "&logPath=" + logPath,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            auditService.audit(action + " - Success", request);
+            return response.getBody();
         } catch (HttpClientErrorException e) {
-            auditService.audit(action + " - Error: " + e.getStatusCode(), request); // Audit error
+            auditService.audit(action + " - Error: " + e.getStatusCode(), request);
             return "Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString();
         } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request); // Audit error
+            auditService.audit(action + " - Error: " + e.getMessage(), request);
             return "Error: " + e.getMessage();
         }
     }
@@ -124,44 +151,53 @@ public class ApiService {
     public String getLogsByTransactionId(int agentId, String transactionId, String date) {
         String action = "Get Logs by Transaction ID for Agent ID: " + agentId + ", Transaction ID: " + transactionId;
         try {
-            // Validar si el transactionId tiene más de 4 dígitos
+            String webServiceUrl = getWebServiceUrl(agentId);
+            String token = getJwtToken(webServiceUrl);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);  // Añadir el token JWT a los encabezados
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            AgentDTO agent = agentService.getServerById(agentId);
+            String logPath = agent.getPathArchive();
+
             if (transactionId.length() < 4) {
                 throw new IllegalArgumentException("Transaction ID must be greater than 4 digits.");
             }
 
-            String webServiceUrl = getWebServiceUrl(agentId);
-            String fullUrl = webServiceUrl + "/logs/search?idTransaction=" + transactionId + "&date=" + date;
+            String fullUrl = webServiceUrl + "/logs/search?idTransaction=" + transactionId + "&date=" + date + "&logPath=" + logPath;
 
-            String logs = restTemplate.getForObject(fullUrl, String.class);
-            auditService.audit(action + " - Success", request); // Audit success
-            return logs;
-        } catch (ParseException e) {
-            auditService.audit(action + " - Error: Invalid date format", request); // Audit error
-            return "Error: Invalid date format. Use DD-MM-YYYY.";
-        } catch (HttpClientErrorException e) {
-            auditService.audit(action + " - Error: " + e.getStatusCode(), request); // Audit error
-            return "Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString();
+            ResponseEntity<String> response = restTemplate.exchange(
+                    fullUrl,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            auditService.audit(action + " - Success", request);
+            return response.getBody();
         } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request); // Audit error
+            auditService.audit(action + " - Error: " + e.getMessage(), request);
             return "Error: " + e.getMessage();
         }
     }
 
     public ResponseEntity<String> searchLogsInSelectedFiles(int agentId, String idTransaction, List<String> selectedFiles) {
         String action = "Search Logs in Selected Files for Agent ID: " + agentId + ", Transaction ID: " + idTransaction;
-        try {
-            // Validar si el transactionId tiene más de 4 dígitos
-            if (idTransaction.length() < 4) {
-                throw new IllegalArgumentException("Transaction ID must be greater than 4 digits.");
-            }
 
+        try {
             String webServiceUrl = getWebServiceUrl(agentId);
+            String token = getJwtToken(webServiceUrl);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + token);  // Añadir el token JWT a los encabezados
+
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("idTransaction", idTransaction);
             requestBody.put("selectedFiles", selectedFiles);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
@@ -171,14 +207,14 @@ public class ApiService {
                     String.class
             );
 
-            auditService.audit(action + " - Success", request); // Audit success
-            return response;
+            auditService.audit(action + " - Success", request);
+            return ResponseEntity.ok(response.getBody());
         } catch (HttpClientErrorException e) {
-            auditService.audit(action + " - Error: " + e.getStatusCode(), request); // Audit error
-            return new ResponseEntity<>("Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString(), e.getStatusCode());
+            auditService.audit(action + " - Error: " + e.getStatusCode(), request);
+            return ResponseEntity.status(e.getStatusCode()).body("Error: " + e.getResponseBodyAsString());
         } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request); // Audit error
-            return new ResponseEntity<>("Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            auditService.audit(action + " - Error: " + e.getMessage(), request);
+            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
 }

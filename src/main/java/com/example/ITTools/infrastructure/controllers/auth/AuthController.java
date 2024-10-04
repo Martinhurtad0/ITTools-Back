@@ -20,7 +20,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginDTO loginDTO) {
         try {
-            String token = iAuthRepo.login(loginDTO); // Aquí JwtService generará una nueva secret key
+            String token = iAuthRepo.login(loginDTO);
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + token);
             return ResponseEntity.ok().headers(headers).body(token);

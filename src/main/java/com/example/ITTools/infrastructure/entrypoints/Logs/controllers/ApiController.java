@@ -20,11 +20,6 @@ public class ApiController {
         return apiService.getLogs(agentId);
     }
 
-    @GetMapping("/{agentId}/{filename}")
-    public String getLogFile(@PathVariable int agentId, @PathVariable String filename) {
-        return apiService.getLogFile(agentId, filename);
-    }
-
     @PostMapping("/zip/{agentId}")
     public ResponseEntity<byte[]> zipLogFile(@PathVariable int agentId, @RequestBody List<String> filenames) {
         return apiService.zipLogFiles(agentId, filenames);
