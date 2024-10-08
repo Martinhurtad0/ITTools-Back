@@ -67,14 +67,10 @@ public class ApiService {
                     String.class
             );
 
-            auditService.audit(action + " - Success", request);  // Audit success
+            auditService.audit(action, request);  // Audit success
             return response.getBody();
         } catch (HttpClientErrorException e) {
-            auditService.audit(action + " - Error: " + e.getStatusCode(), request);  // Audit error
             return "Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString();
-        } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request);  // Audit error
-            return "Error: " + e.getMessage();
         }
     }
 
@@ -104,15 +100,15 @@ public class ApiService {
             responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             responseHeaders.setContentDispositionFormData("attachment", "logs.zip");
 
-            auditService.audit(action + " - Success", request);
+            auditService.audit(action , request);
             return new ResponseEntity<>(response.getBody(), responseHeaders, HttpStatus.OK);
         } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request);
             return new ResponseEntity<>(("Error: " + e.getMessage()).getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public String filterLogsByDate(int agentId, String date) {
+
+    public String filterLogsArchiveByDate(int agentId, String date) {
         String action = "Filter Logs by Date for Agent ID: " + agentId + ", Date: " + date;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
@@ -137,16 +133,48 @@ public class ApiService {
                     String.class
             );
 
-            auditService.audit(action + " - Success", request);
+            auditService.audit(action , request);
             return response.getBody();
         } catch (HttpClientErrorException e) {
-            auditService.audit(action + " - Error: " + e.getStatusCode(), request);
             return "Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString();
-        } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request);
-            return "Error: " + e.getMessage();
         }
     }
+
+    public String filterLogsByDate(int agentId, String date) {
+        String action = "Filter Logs by Date for Agent ID: " + agentId + ", Date: " + date;
+        try {
+            String webServiceUrl = getWebServiceUrl(agentId);
+            String token = getJwtToken(webServiceUrl);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);  // Añadir el token JWT a los encabezados
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            AgentDTO agent = agentService.getServerById(agentId);
+            String logPath = agent.getPathLog();
+
+            if (logPath == null || logPath.isEmpty()) {
+                throw new RuntimeException("Log path not found for agent ID: " + agentId);
+            }
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    webServiceUrl + "/logs/filter?date=" + date + "&logPath=" + logPath,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            auditService.audit(action , request);
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            return "Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString();
+        }
+    }
+
+
+
+
 
     public String getLogsByTransactionId(int agentId, String transactionId, String date) {
         String action = "Get Logs by Transaction ID for Agent ID: " + agentId + ", Transaction ID: " + transactionId;
@@ -160,7 +188,7 @@ public class ApiService {
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             AgentDTO agent = agentService.getServerById(agentId);
-            String logPath = agent.getPathArchive();
+            String logPath = agent.getPathLog();
 
             if (transactionId.length() < 4) {
                 throw new IllegalArgumentException("Transaction ID must be greater than 4 digits.");
@@ -175,10 +203,9 @@ public class ApiService {
                     String.class
             );
 
-            auditService.audit(action + " - Success", request);
+            auditService.audit(action, request);
             return response.getBody();
         } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request);
             return "Error: " + e.getMessage();
         }
     }
@@ -207,14 +234,10 @@ public class ApiService {
                     String.class
             );
 
-            auditService.audit(action + " - Success", request);
+            auditService.audit(action , request);
             return ResponseEntity.ok(response.getBody());
         } catch (HttpClientErrorException e) {
-            auditService.audit(action + " - Error: " + e.getStatusCode(), request);
             return ResponseEntity.status(e.getStatusCode()).body("Error: " + e.getResponseBodyAsString());
-        } catch (Exception e) {
-            auditService.audit(action + " - Error: " + e.getMessage(), request);
-            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
 }

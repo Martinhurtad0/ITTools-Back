@@ -29,6 +29,11 @@ public class AgentModel {
 
     @Column(nullable = false)
     @Getter @Setter
+    private String pathLog;
+
+
+    @Column(nullable = false)
+    @Getter @Setter
     private String pathArchive;
 
     @Getter @Setter
@@ -46,6 +51,7 @@ public class AgentModel {
         dto.setAgentName(this.agentName);
         dto.setIPAgent(this.IPAgent);
         dto.setWebServiceUrl(this.webServiceUrl);
+        dto.setPathLog(this.pathLog);
         dto.setPathArchive(this.pathArchive);
         dto.setStatus(this.status);
         dto.setRegionId(this.region != null ? this.region.getIdRegion() : null);

@@ -10,6 +10,7 @@ public class AgentDTO {
     private String agentName;
     private String IPAgent;
     private String webServiceUrl;
+    private String pathLog;
     private String pathArchive;
     private int status;
     private Long regionId;

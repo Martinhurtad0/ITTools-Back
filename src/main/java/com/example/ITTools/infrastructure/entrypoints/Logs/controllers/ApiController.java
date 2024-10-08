@@ -30,6 +30,12 @@ public class ApiController {
         return apiService.filterLogsByDate(agentId, date);
     }
 
+    @GetMapping("/filter_archive/{agentId}")
+    public String filterLogsArchiveByDate(@PathVariable int agentId, @RequestParam("date") String date) {
+        return apiService.filterLogsArchiveByDate(agentId, date);
+    }
+
+
     @GetMapping("/transaction/{agentId}")
     public String getLogsByTransactionId(@PathVariable int agentId,
                                          @RequestParam("transactionId") String transactionId,

@@ -73,12 +73,13 @@ public class AgentService {
         serverModel.setAgentName(serverDTO.getAgentName());
         serverModel.setIPAgent(serverDTO.getIPAgent());
         serverModel.setWebServiceUrl(serverDTO.getWebServiceUrl());
+        serverModel.setPathLog(serverDTO.getPathLog());
         serverModel.setPathArchive(serverDTO.getPathArchive());
         serverModel.setStatus(1);
         serverModel.setRegion(region);
 
         AgentModel savedServer = serverRepository.save(serverModel);
-        auditService.audit("Create Agent: " + savedServer.getAgentName() + ", id " + savedServer.getIdAgent(), request);
+        auditService.audit("Create Agent: " + savedServer.getAgentName() + ", ID: " + savedServer.getIdAgent(), request);
 
         return savedServer.toDTO();
     }
@@ -123,6 +124,7 @@ public AgentDTO updateServer(int id, AgentDTO serverDTO, HttpServletRequest requ
     existingServer.setAgentName(serverDTO.getAgentName());
     existingServer.setIPAgent(serverDTO.getIPAgent());
     existingServer.setWebServiceUrl(serverDTO.getWebServiceUrl());
+    existingServer.setPathLog(serverDTO.getPathLog());
     existingServer.setPathArchive(serverDTO.getPathArchive());
 
     // Actualizar la región si es necesario
@@ -136,7 +138,7 @@ public AgentDTO updateServer(int id, AgentDTO serverDTO, HttpServletRequest requ
     AgentModel updatedServer = serverRepository.save(existingServer);
 
     // Auditoría de la acción
-    auditService.audit("Update Agent: " + updatedServer.getAgentName() + ", id " + updatedServer.getIdAgent(), request);
+    auditService.audit("Update Agent: " + updatedServer.getAgentName() + ", ID: " + updatedServer.getIdAgent(), request);
 
     return updatedServer.toDTO();
 }
@@ -151,7 +153,6 @@ public AgentDTO updateServer(int id, AgentDTO serverDTO, HttpServletRequest requ
         server.setStatus(server.getStatus() == 1 ? 0 : 1);
 
         // Guardar el servidor actualizado
-        auditService.audit("Update Agent Status: "+ server.getAgentName() + ", id "+ id , request);
         serverRepository.save(server);
     }
 
@@ -161,7 +162,7 @@ public AgentDTO updateServer(int id, AgentDTO serverDTO, HttpServletRequest requ
 
         serverRepository.deleteById(idAgent);
 
-        auditService.audit("Delete Agent: " + agent.getAgentName()+ ", id "+ agent.getIdAgent(), request);
+        auditService.audit("Delete Agent: " + agent.getAgentName()+ ", ID: "+ agent.getIdAgent(), request);
 
         // Convertir el modelo a DTO antes de devolver
         return agent.toDTO();
