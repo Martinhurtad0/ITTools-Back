@@ -49,7 +49,7 @@ public class RegionService {
         RegionModel createdRegion = regionRepository.save(region);
 
         // Registrar la auditoría
-        auditService.audit("Create Region: " + createdRegion.getNameRegion() + ", ID: " + createdRegion.getIdRegion(), request);
+        auditService.audit("Create region: " + createdRegion.getNameRegion() + ", ID: " + createdRegion.getIdRegion(), request);
 
         return createdRegion;
     }
@@ -80,7 +80,7 @@ public class RegionService {
         RegionModel updatedRegion = regionRepository.save(region);
 
         // Registrar la auditoría
-        auditService.audit("Update Region: " + updatedRegion.getNameRegion() + ", ID: " + updatedRegion.getIdRegion(), request);
+        auditService.audit("Update region: " + updatedRegion.getNameRegion() + ", ID: " + updatedRegion.getIdRegion(), request);
 
         return updatedRegion;
     }
@@ -113,7 +113,7 @@ public class RegionService {
         regionRepository.deleteById(idRegion);
 
         // Registrar la auditoría
-        auditService.audit("Delete Region: " + deleteRegion.getNameRegion() + ", ID: " + deleteRegion.getIdRegion(), request);
+        auditService.audit("Delete region: " + deleteRegion.getNameRegion() + ", ID: " + deleteRegion.getIdRegion(), request);
 
         return deleteRegion.toDTO();
     }

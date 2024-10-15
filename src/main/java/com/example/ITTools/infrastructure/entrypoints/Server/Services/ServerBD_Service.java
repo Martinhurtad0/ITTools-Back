@@ -82,7 +82,7 @@ public class ServerBD_Service {
         serverModel.setRegion(region);
 
         ServerBD_Model savedServer = serverRepository.save(serverModel);
-        auditService.audit("Create ServerDB: " + savedServer.getServerName() + ", ID: " + savedServer.getIdServer(), request);
+        auditService.audit("Create server DB: " + savedServer.getServerName() + ", ID: " + savedServer.getIdServer(), request);
         return savedServer.toDTO();
     }
 
@@ -120,7 +120,7 @@ public class ServerBD_Service {
         }
 
         ServerBD_Model updatedServer = serverRepository.save(server);
-        auditService.audit("Update ServerDB: " + updatedServer.getServerName() + ", ID: " + updatedServer.getIdServer(), request);
+        auditService.audit("Update server DB: " + updatedServer.getServerName() + ", ID: " + updatedServer.getIdServer(), request);
         return updatedServer.toDTO();
     }
 
@@ -139,7 +139,7 @@ public class ServerBD_Service {
         Optional<ServerBD_Model> optionalServerBDModel = serverRepository.findById(id);
         ServerBD_Model deleteServerDB = optionalServerBDModel.get();
         serverRepository.deleteById(id);
-        auditService.audit("Delete ServerDB: "+deleteServerDB.getServerName()+ ", ID: "+ deleteServerDB.getIdServer(),request);
+        auditService.audit("Delete server DB: "+deleteServerDB.getServerName()+ ", ID: "+ deleteServerDB.getIdServer(),request);
         return  deleteServerDB.toDTO();
     }
 

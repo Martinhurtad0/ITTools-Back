@@ -79,7 +79,7 @@ public class UserRepositoryAdapter implements UserRepository {
 
         // Registrar la auditoría
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        auditService.audit("Update User: " + updatedEntity.getUsername()+ ", ID: " + updatedEntity.getId(), request);
+        auditService.audit("Update user: " + updatedEntity.getUsername()+ ", ID: " + updatedEntity.getId(), request);
 
         // Convertir la entidad actualizada de nuevo a un objeto de dominio
         return mapToDomain(updatedEntity);
@@ -97,7 +97,7 @@ public class UserRepositoryAdapter implements UserRepository {
         jpaUserRepository.deleteById(id);
 
         // Registrar la auditoría
-        auditService.audit("Delete User: " + user.getUsername() + ", ID: " + user.getId(), request);
+        auditService.audit("Delete user: " + user.getUsername() + ", ID: " + user.getId(), request);
     }
 
 

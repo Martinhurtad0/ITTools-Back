@@ -163,7 +163,7 @@ public class JpaUserRepositoryAdapter implements AuthRepositoryPort {
         UserEntity savedUser = userRepo.save(user);
 
         // Registrar la auditoría
-        auditService.audit("Create User : " + savedUser.getUsername()+ ", ID: " + savedUser.getId(), request);
+        auditService.audit("Create user : " + savedUser.getUsername()+ ", ID: " + savedUser.getId(), request);
     }
 
 }

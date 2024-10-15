@@ -50,7 +50,7 @@ public class ApiService {
     }
 
     public String getLogs(int agentId) {
-        String action = "Get Logs for Agent ID: " + agentId;
+        String action = "Get logs in the agent ID: " + agentId;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -75,7 +75,7 @@ public class ApiService {
     }
 
     public ResponseEntity<byte[]> zipLogFiles(int agentId, List<String> filenames) {
-        String action = "Zip Log Files for Agent ID: " + agentId;
+        String action = "Downloading logs to the agent ID: " + agentId;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -109,7 +109,7 @@ public class ApiService {
 
 
     public String filterLogsArchiveByDate(int agentId, String date) {
-        String action = "Filter Logs by Date for Agent ID: " + agentId + ", Date: " + date;
+        String action = "Get archive logs in the agent ID: " + agentId + ", Date: " + date;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -141,7 +141,7 @@ public class ApiService {
     }
 
     public String filterLogsByDate(int agentId, String date) {
-        String action = "Filter Logs by Date for Agent ID: " + agentId + ", Date: " + date;
+        String action = "Get logs in the agent ID: " + agentId + ", Date: " + date;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -177,7 +177,7 @@ public class ApiService {
 
 
     public String getLogsByTransactionId(int agentId, String transactionId, String date) {
-        String action = "Get Logs by Transaction ID for Agent ID: " + agentId + ", Transaction ID: " + transactionId;
+        String action = "Transaction search in the agent ID: " + agentId + ", Transaction ID: " + transactionId;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -211,7 +211,7 @@ public class ApiService {
     }
 
     public ResponseEntity<String> searchLogsInSelectedFiles(int agentId, String idTransaction, List<String> selectedFiles) {
-        String action = "Search Logs in Selected Files for Agent ID: " + agentId + ", Transaction ID: " + idTransaction;
+        String action = "Transaction search in the agent ID: " + agentId + ", Transaction ID: " + idTransaction;
 
         try {
             String webServiceUrl = getWebServiceUrl(agentId);

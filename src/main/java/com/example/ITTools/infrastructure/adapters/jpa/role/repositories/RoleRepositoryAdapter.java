@@ -62,7 +62,7 @@ public class RoleRepositoryAdapter implements RoleRepositoryPort {
 
         // Guardar el rol en la base de datos
         RoleEntity savedRoleEntity = jpaRoleRepository.save(roleEntity);
-        auditService.audit("Create Role: " + savedRoleEntity.getAuthority()+ ", ID: " + savedRoleEntity.getId() ,request);
+        auditService.audit("Create role: " + savedRoleEntity.getAuthority()+ ", ID: " + savedRoleEntity.getId() ,request);
         // Retornar el DTO del rol guardado
         return mapToDTO(savedRoleEntity);
     }
@@ -82,7 +82,7 @@ public class RoleRepositoryAdapter implements RoleRepositoryPort {
         // Guardar el rol actualizado
         RoleEntity updatedRoleEntity = jpaRoleRepository.save(roleEntity);
 
-        auditService.audit("Update Role: " + updatedRoleEntity.getAuthority()+ ", ID: " + updatedRoleEntity.getId() ,request);
+        auditService.audit("Update role: " + updatedRoleEntity.getAuthority()+ ", ID: " + updatedRoleEntity.getId() ,request);
 
         // Convertir la entidad guardada de nuevo a un objeto de dominio
         return mapToDomain(updatedRoleEntity);
@@ -108,7 +108,7 @@ public class RoleRepositoryAdapter implements RoleRepositoryPort {
             if (roleEntity.isPresent()) {
                 RoleEntity role = roleEntity.get();
                 jpaRoleRepository.deleteById(id);
-                auditService.audit("Delete Role: " + role.getAuthority()+ ", ID: " + role.getId() ,request);
+                auditService.audit("Delete role: " + role.getAuthority()+ ", ID: " + role.getId() ,request);
             } else {
                 auditService.audit("Delete Role Failed: Role with ID " + id + " not found", request);
             }

@@ -79,7 +79,7 @@ public class AgentService {
         serverModel.setRegion(region);
 
         AgentModel savedServer = serverRepository.save(serverModel);
-        auditService.audit("Create Agent: " + savedServer.getAgentName() + ", ID: " + savedServer.getIdAgent(), request);
+        auditService.audit("Create agent: " + savedServer.getAgentName() + ", ID: " + savedServer.getIdAgent(), request);
 
         return savedServer.toDTO();
     }
@@ -138,7 +138,7 @@ public AgentDTO updateServer(int id, AgentDTO serverDTO, HttpServletRequest requ
     AgentModel updatedServer = serverRepository.save(existingServer);
 
     // Auditoría de la acción
-    auditService.audit("Update Agent: " + updatedServer.getAgentName() + ", ID: " + updatedServer.getIdAgent(), request);
+    auditService.audit("Update agent: " + updatedServer.getAgentName() + ", ID: " + updatedServer.getIdAgent(), request);
 
     return updatedServer.toDTO();
 }
@@ -162,7 +162,7 @@ public AgentDTO updateServer(int id, AgentDTO serverDTO, HttpServletRequest requ
 
         serverRepository.deleteById(idAgent);
 
-        auditService.audit("Delete Agent: " + agent.getAgentName()+ ", ID: "+ agent.getIdAgent(), request);
+        auditService.audit("Delete agent: " + agent.getAgentName()+ ", ID: "+ agent.getIdAgent(), request);
 
         // Convertir el modelo a DTO antes de devolver
         return agent.toDTO();

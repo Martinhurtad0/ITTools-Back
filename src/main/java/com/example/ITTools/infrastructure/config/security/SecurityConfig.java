@@ -23,7 +23,8 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())  // Deshabilitar CSRF si estás usando tokens JWT
                 .authorizeHttpRequests(authRequest -> authRequest
-                        .requestMatchers("/auth/login/**").permitAll()  // Permitir acceso a login sin autenticación
+                        .requestMatchers("/auth/login/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()  // Cualquier otra solicitud debe estar autenticada
                 )
                 .sessionManagement(session -> session
