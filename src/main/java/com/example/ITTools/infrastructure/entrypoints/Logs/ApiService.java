@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static javax.swing.plaf.synth.SynthLookAndFeel.getRegion;
+
 @Service
 public class ApiService {
 
@@ -49,10 +51,12 @@ public class ApiService {
         return agent.getWebServiceUrl();
     }
 
-    public String getLogs(int agentId) {
-        String action = "Get logs in the agent ID: " + agentId;
+    public String getLogs(int agentId, String region) {
+        String action = "Get logs in the region ID: " + region + ", Agent ID: " + agentId; // Se incluye la región
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
+
+            // Elimina la declaración duplicada de "region"
             String token = getJwtToken(webServiceUrl);
 
             HttpHeaders headers = new HttpHeaders();
@@ -67,15 +71,16 @@ public class ApiService {
                     String.class
             );
 
-            auditService.audit(action, request);  // Audit success
+            auditService.audit(action, request);  // Auditar con la región incluida en el mensaje
             return response.getBody();
         } catch (HttpClientErrorException e) {
             return "Error: " + e.getStatusCode() + " " + e.getResponseBodyAsString();
         }
     }
 
-    public ResponseEntity<byte[]> zipLogFiles(int agentId, List<String> filenames) {
-        String action = "Downloading logs to the agent ID: " + agentId;
+
+    public ResponseEntity<byte[]> zipLogFiles(int agentId, List<String> filenames, String region) {
+        String action = "Downloading logs to the region ID: " + region + ", Agent ID: " + agentId; // Se incluye la región
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -108,8 +113,8 @@ public class ApiService {
     }
 
 
-    public String filterLogsArchiveByDate(int agentId, String date) {
-        String action = "Get archive logs in the agent ID: " + agentId + ", Date: " + date;
+    public String filterLogsArchiveByDate(int agentId, String date, String region) {
+        String action = "Get archive logs in the region ID: " + region + ", Agent ID: " + agentId + ", Date: " + date ; // Se incluye la región
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -140,8 +145,8 @@ public class ApiService {
         }
     }
 
-    public String filterLogsByDate(int agentId, String date) {
-        String action = "Get logs in the agent ID: " + agentId + ", Date: " + date;
+    public String filterLogsByDate(int agentId, String date, String region) {
+        String action = "Get logs in the region ID: " + region + ", Agent ID: " + agentId + ", Date: " + date ; // Se incluye la región
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -176,8 +181,8 @@ public class ApiService {
 
 
 
-    public String getLogsByTransactionId(int agentId, String transactionId, String date) {
-        String action = "Transaction search in the agent ID: " + agentId + ", Transaction ID: " + transactionId;
+    public String getLogsByTransactionId(int agentId, String transactionId, String date, String region) {
+        String action = "Transaction search in the region ID: " + region + ", Agent ID: " + agentId + ", Transaction ID: " + transactionId;
         try {
             String webServiceUrl = getWebServiceUrl(agentId);
             String token = getJwtToken(webServiceUrl);
@@ -210,8 +215,8 @@ public class ApiService {
         }
     }
 
-    public ResponseEntity<String> searchLogsInSelectedFiles(int agentId, String idTransaction, List<String> selectedFiles) {
-        String action = "Transaction search in the agent ID: " + agentId + ", Transaction ID: " + idTransaction;
+    public ResponseEntity<String> searchLogsInSelectedFiles(int agentId, String idTransaction, List<String> selectedFiles, String region) {
+        String action = "Transaction search in the region ID: " + region + ", Agent ID: " + agentId + ", Transaction ID: " + idTransaction;
 
         try {
             String webServiceUrl = getWebServiceUrl(agentId);

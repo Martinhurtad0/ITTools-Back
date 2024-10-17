@@ -16,35 +16,37 @@ public class ApiController {
     private ApiService apiService;
 
     @GetMapping("/{agentId}")
-    public String getLogs(@PathVariable int agentId) {
-        return apiService.getLogs(agentId);
+    public String getLogs(@PathVariable int agentId, @RequestParam String region) {
+        return apiService.getLogs(agentId, region);
     }
 
+
     @PostMapping("/zip/{agentId}")
-    public ResponseEntity<byte[]> zipLogFile(@PathVariable int agentId, @RequestBody List<String> filenames) {
-        return apiService.zipLogFiles(agentId, filenames);
+    public ResponseEntity<byte[]> zipLogFile(@PathVariable int agentId, @RequestBody List<String> filenames, @RequestParam String region) {
+        return apiService.zipLogFiles(agentId, filenames, region);
     }
 
     @GetMapping("/filter/{agentId}")
-    public String filterLogsByDate(@PathVariable int agentId, @RequestParam("date") String date) {
-        return apiService.filterLogsByDate(agentId, date);
+    public String filterLogsByDate(@PathVariable int agentId, @RequestParam("date") String date, @RequestParam String region) {
+        return apiService.filterLogsByDate(agentId, date, region);
     }
 
     @GetMapping("/filter_archive/{agentId}")
-    public String filterLogsArchiveByDate(@PathVariable int agentId, @RequestParam("date") String date) {
-        return apiService.filterLogsArchiveByDate(agentId, date);
+    public String filterLogsArchiveByDate(@PathVariable int agentId, @RequestParam("date") String date, @RequestParam String region ) {
+        return apiService.filterLogsArchiveByDate(agentId, date, region);
     }
 
 
     @GetMapping("/transaction/{agentId}")
     public String getLogsByTransactionId(@PathVariable int agentId,
                                          @RequestParam("transactionId") String transactionId,
-                                         @RequestParam("date") String date) {
-        return apiService.getLogsByTransactionId(agentId, transactionId, date);
+                                         @RequestParam("date") String date, @RequestParam String region ) {
+        return apiService.getLogsByTransactionId(agentId, transactionId, date, region);
     }
     @PostMapping("/search_selected/{agentId}")
     public ResponseEntity<String> searchLogsInSelectedFiles(
             @PathVariable int agentId,
+            @RequestParam String region, // Añadir el parámetro de región
             @RequestBody Map<String, Object> requestBody) {
 
         String idTransaction = (String) requestBody.get("idTransaction");
@@ -54,9 +56,9 @@ public class ApiController {
             return ResponseEntity.badRequest().body("idTransaction and selectedFiles are required.");
         }
 
-        return apiService.searchLogsInSelectedFiles(agentId, idTransaction, selectedFiles);
+        // Pasar la región al servicio
+        return apiService.searchLogsInSelectedFiles(agentId, idTransaction, selectedFiles, region);
     }
-
 
 
 }
