@@ -14,7 +14,7 @@ public class ServerBD_DTO {
     private String serverDB;
     private String userLogin;
     private String password;
-    private String dbFR;
+    private String recyclingDB;
     private int status;
     private Long regionId;
 }

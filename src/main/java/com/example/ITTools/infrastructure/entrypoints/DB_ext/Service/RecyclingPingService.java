@@ -1,9 +1,8 @@
 package com.example.ITTools.infrastructure.entrypoints.DB_ext.Service;
 
+import com.example.ITTools.infrastructure.entrypoints.Audit.Model.RecyclingAudit;
+import com.example.ITTools.infrastructure.entrypoints.Audit.Service.AuditService;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.LogTransactionServers;
-
-
-
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Pins;
 import com.example.ITTools.infrastructure.entrypoints.Server.Models.ServerBD_Model;
 import com.example.ITTools.infrastructure.entrypoints.Server.Repositories.ServerBD_Repository;
@@ -15,20 +14,19 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-
 import java.io.InputStream;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static java.lang.String.valueOf;
 
 @Service
 public class RecyclingPingService {
@@ -36,55 +34,67 @@ public class RecyclingPingService {
     @Autowired
     private ServerBD_Repository serverBDRepository;
 
-    // Metodo para hacer la conexion a la bases de datos externas
+    @Autowired
+    private AuditService auditService;
+
     public JdbcTemplate getJdbcTemplate(int serverId) {
         ServerBD_Model server = serverBDRepository.findById(serverId)
-                .orElseThrow(() -> new RuntimeException("Server not found"));
+                .orElseThrow(() -> new RuntimeException("Server with ID " + serverId + " not found"));
+
+        if (server.getIpServer() == null || server.getIpServer().isEmpty()) {
+            throw new RuntimeException("Server IP is missing for server ID: " + serverId);
+        }
+        if (server.getPortServer() == null || server.getPortServer().isEmpty()) {
+            throw new RuntimeException("Server port is missing for server ID: " + serverId);
+        }
+        if (server.getRecyclingDB() == null || server.getRecyclingDB().isEmpty()) {
+            throw new RuntimeException("Database name is missing for server ID: " + serverId);
+        }
+        if (server.getUserLogin() == null || server.getUserLogin().isEmpty()) {
+            throw new RuntimeException("Username is missing for server ID: " + serverId);
+        }
+        if (server.getPassword() == null || server.getPassword().isEmpty()) {
+            throw new RuntimeException("Password is missing for server ID: " + serverId);
+        }
 
         String url;
         if (server.getInstance() != null && !server.getInstance().isEmpty()) {
-            url = String.format("jdbc:sqlserver://%s:%s;databaseName=%s;instanceName=%s;encrypt=true;trustServerCertificate=true",
-                    server.getIpServer(), server.getPortServer(), server.getServerDB(), server.getInstance());
+            url = String.format(
+                    "jdbc:sqlserver://%s:%s;databaseName=%s;instanceName=%s;encrypt=true;trustServerCertificate=true",
+                    server.getIpServer(), server.getPortServer(), server.getRecyclingDB(), server.getInstance());
         } else {
-            url = String.format("jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=true;trustServerCertificate=true",
-                    server.getIpServer(), server.getPortServer(), server.getServerDB());
+            url = String.format(
+                    "jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=true;trustServerCertificate=true",
+                    server.getIpServer(), server.getPortServer(), server.getRecyclingDB());
         }
 
-        try {
-            DataSource dataSource = DataSourceBuilder.create()
-                    .url(url)
-                    .username(server.getUserLogin())
-                    .password(server.getPassword())
-                    .build();
+        DataSource dataSource = DataSourceBuilder.create()
+                .url(url)
+                .username(server.getUserLogin())
+                .password(server.getPassword())
+                .build();
 
-            // Probar la conexión
-            try (Connection connection = dataSource.getConnection()) {
-                System.out.println("Conexión a la base de datos exitosa.");
+        try (Connection connection = dataSource.getConnection()) {
+            if (!connection.isValid(2)) {
+                throw new SQLException("Connection test failed.");
             }
-
-            return new JdbcTemplate(dataSource);
+            System.out.println("Conexión a la base de datos exitosa.");
         } catch (SQLException e) {
-            System.err.println("Error al obtener la conexión JDBC: " + e.getMessage());
-            throw new RuntimeException("Error al obtener la conexión JDBC: " + e.getMessage(), e);
-        } catch (Exception e) {
-            System.err.println("Error al crear JdbcTemplate: " + e.getMessage());
-            throw new RuntimeException("Error al crear JdbcTemplate: " + e.getMessage(), e);
+            System.err.println("Error al probar la conexión JDBC: " + e.getMessage());
+            throw new RuntimeException("Error al probar la conexión JDBC: " + e.getMessage(), e);
         }
+
+        return new JdbcTemplate(dataSource);
     }
 
     public String testDatabaseConnection(int serverId) {
         try {
-            // Obtener JdbcTemplate
             JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId);
-
-            // Si llegamos aquí, significa que se pudo crear el JdbcTemplate
             return "Conexión a la base de datos exitosa.";
         } catch (Exception e) {
-            // Captura cualquier excepción y devuelve un mensaje de error
             return "Error al conectar a la base de datos: " + e.getMessage();
         }
     }
-
 
     public List<Pins> listPin(String pinIn, int serverId) {
         List<Pins> listPin = new ArrayList<>();
@@ -95,23 +105,21 @@ public class RecyclingPingService {
 
             listPin = jdbcTemplate.query(sqlPins, new Object[]{pinIn}, (rs, rowNum) -> {
                 Pins pin = new Pins();
-                pin.setProductId(String.valueOf(rs.getInt("product_id")));
+                pin.setProductId(rs.getString("product_id"));
                 pin.setPin(pinIn);
-                pin.setControlNo(String.valueOf(rs.getInt("control_no")));
+                pin.setControlNo(rs.getString("control_no"));
                 pin.setAmount(rs.getDouble("amount"));
                 pin.setAni(rs.getString("ani"));
-                pin.setInsertDate(String.valueOf(rs.getDate("insert_date")));
-                pin.setActivationDate(String.valueOf(rs.getDate("activation_date")));
-                pin.setRecycleDate(String.valueOf(rs.getDate("recycle_date")));
+                pin.setInsertDate(valueOf(rs.getDate("insert_date")));
+                pin.setActivationDate(valueOf(rs.getDate("activation_date")));
+                pin.setRecycleDate(valueOf(rs.getDate("recycle_date")));
                 pin.setTransactionCount(rs.getInt("transaction_count"));
                 pin.setBatchID(rs.getInt("BatchID"));
-                pin.setExpirationDate(String.valueOf(rs.getDate("expirationDate")));
+                pin.setExpirationDate(valueOf(rs.getDate("expirationDate")));
 
-                // Validación adicional antes de la consulta
                 int pinStatusId = rs.getInt("pinStatusId");
-                System.out.println("pinStatusId: " + pinStatusId); // Imprime para depuración
+                System.out.println("pinStatusId: " + pinStatusId);
 
-                // Consulta adicional para obtener el estado del pin
                 String sqlPinStatus = "SELECT code FROM PINStatus WHERE id = ?";
                 String state = jdbcTemplate.queryForObject(sqlPinStatus, new Object[]{pinStatusId}, String.class);
                 pin.setState(state);
@@ -123,140 +131,180 @@ public class RecyclingPingService {
 
         } catch (EmptyResultDataAccessException e) {
             System.out.println("No se encontraron resultados para el PIN: " + pinIn);
-            return listPin; // Retorna lista vacía si no hay resultados
+            return listPin;
         } catch (DataAccessException e) {
             System.err.println("Error de acceso a datos: " + e.getMessage());
             throw new RuntimeException("Error al acceder a la base de datos: " + e.getMessage(), e);
         } catch (Exception e) {
-            e.printStackTrace(); // Imprime el stack trace para depuración
+            e.printStackTrace();
             throw new RuntimeException("Error al obtener pins: " + e.getMessage(), e);
         }
     }
-    // Método para actualizar un pin
-    public boolean updatePin(Pins pinIn, LogTransactionServers serv) {
+
+    public void recyclePins(List<Pins> selectedPinsTry, int serverId, String auditTicket, String authorization) {
+        if (auditTicket == null || auditTicket.isEmpty()) {
+            throw new RuntimeException("Audit ticket is required.");
+        }
+
+        if (authorization == null || authorization.isEmpty()) {
+            throw new RuntimeException("Authorization is required. Please provide who authorized the operation.");
+        }
+
+        if (selectedPinsTry == null || selectedPinsTry.isEmpty()) {
+            throw new RuntimeException("No pins selected for recycling.");
+        }
+
         try {
-            // Obtener JdbcTemplate usando el método getJdbcTemplate
-            JdbcTemplate jdbcTemplate = getJdbcTemplate(serv.getServerId()); // Asegúrate de tener el serverId en LogTransactionServers
+            for (Pins pin : selectedPinsTry) {
+                if (!"SOLD".equals(pin.getState())) {
+                    RecyclingAudit audit = new RecyclingAudit();
+                    audit.setPin(pin.getPin());
+                    audit.setTicket(auditTicket);
+                    audit.setStatusPinBefore(pin.getState());
+                    audit.setDescriptionError("The pin does not comply with the parameter ('Status = Sold')");
+                    audit.setUsername(authorization); // Guardamos el autorizador en el campo de la auditoría
+                    auditService.saveRecyclingAudit(audit);
+                    throw new RuntimeException(String.format("The pin [%s] does not comply with the parameter ('Status = Sold')", pin.getPin()));
+                }
+
+                // Aquí se pasa el serverId al método updatePin
+                if (updatePin(pin, serverId)) {
+                    RecyclingAudit audit = new RecyclingAudit();
+                    audit.setPin(pin.getPin());
+                    audit.setTicket(auditTicket);
+                    audit.setStatusPinBefore("SOLD");
+                    audit.setStatusPinAfter("RECYCLED");
+                    audit.setDescriptionError("");
+                    audit.setUsername(authorization); // Aquí también se guarda el nombre del autorizador
+                    auditService.saveRecyclingAudit(audit);
+                    System.out.println("Updated recycling pin: " + pin.getPin());
+                } else {
+                    throw new RuntimeException(String.format("Pin [%s] was not updated successfully", pin.getPin()));
+                }
+            }
+
+            if (!selectedPinsTry.isEmpty()) {
+                List<Pins> listPinTry = consultPins(selectedPinsTry, serverId);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error during pin recycling process: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean updatePin(Pins pinIn, int serverId) {
+        try {
+            JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId);
 
             String sql = "UPDATE pins SET activation_date = ?, recycle_date = GETDATE(), pinStatusId = ? " +
                     "WHERE pin = ? AND product_id = ? AND control_no = ?";
 
-            // Ejecutar la actualización
-            return jdbcTemplate.update(sql, pinIn.getActivationDate(), 1, pinIn.getPin(), pinIn.getProductId(), pinIn.getControlNo()) > 0;
+            return jdbcTemplate.update(sql,
+                    pinIn.getActivationDate(),
+                    1,
+                    pinIn.getPin(),
+                    pinIn.getProductId(),
+                    pinIn.getControlNo()) > 0;
 
         } catch (Exception e) {
-            // Manejo de otras excepciones
             throw new RuntimeException("Error al actualizar el pin: " + e.getMessage(), e);
         }
     }
 
-
-
-    // Método para subir archivo
     public List<Pins> uploadFile(MultipartFile file, int serverId) {
         List<Pins> listPinExcel = new ArrayList<>();
-        try (InputStream fileIn = file.getInputStream()) { // Elimina FileInputStream, usa directamente InputStream
-            Workbook workbook = WorkbookFactory.create(fileIn); // Carga el archivo Excel
-            Sheet sheet = workbook.getSheetAt(0); // Obtén la primera hoja
-            Iterator<Row> rowIterator = sheet.iterator(); // Itera sobre las filas
-            DataFormatter formatter = new DataFormatter(); // Formateador para las celdas
+        try (InputStream fileIn = file.getInputStream()) {
+            Workbook workbook = WorkbookFactory.create(fileIn);
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rowIterator = sheet.iterator();
+            DataFormatter formatter = new DataFormatter();
 
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
 
-                if (row.getRowNum() == 0) { // Salta la fila de encabezados
+                if (row.getRowNum() == 0) {
                     continue;
                 }
 
-                Pins pin = new Pins(); // Instancia del objeto Pins
-                pin.setPin(formatter.formatCellValue(row.getCell(0))); // Pin
-                pin.setProductId(formatter.formatCellValue(row.getCell(1))); // Product ID
-                pin.setControlNo(formatter.formatCellValue(row.getCell(2))); // Control No
+                Pins pin = new Pins();
+                pin.setPin(formatter.formatCellValue(row.getCell(0)));
+                pin.setProductId(formatter.formatCellValue(row.getCell(1)));
+                pin.setControlNo(formatter.formatCellValue(row.getCell(2)));
 
-                // Manejo seguro para Amount
                 try {
                     Cell amountCell = row.getCell(3);
                     if (amountCell != null) {
                         pin.setAmount(Double.parseDouble(formatter.formatCellValue(amountCell)));
                     } else {
-                        pin.setAmount(0.0); // Valor por defecto o manejo alternativo
+                        pin.setAmount(0.0);
                     }
                 } catch (NumberFormatException e) {
-                    pin.setAmount(0.0); // Manejo del error
+                    pin.setAmount(0.0);
                 }
 
-                pin.setAni(formatter.formatCellValue(row.getCell(4))); // ANI
-                pin.setInsertDate(formatter.formatCellValue(row.getCell(5))); // Insert Date
-                pin.setActivationDate(formatter.formatCellValue(row.getCell(6))); // Activation Date
-                pin.setRecycleDate(formatter.formatCellValue(row.getCell(7))); // Recycle Date
+                pin.setAni(formatter.formatCellValue(row.getCell(4)));
+                pin.setInsertDate(formatter.formatCellValue(row.getCell(5)));
+                pin.setActivationDate(formatter.formatCellValue(row.getCell(6)));
+                pin.setRecycleDate(formatter.formatCellValue(row.getCell(7)));
 
-                // Manejo seguro para Batch ID
                 try {
                     Cell batchIDCell = row.getCell(9);
                     if (batchIDCell != null) {
                         pin.setBatchID(Integer.parseInt(formatter.formatCellValue(batchIDCell)));
                     } else {
-                        pin.setBatchID(0); // Valor por defecto
+                        pin.setBatchID(0);
                     }
                 } catch (NumberFormatException e) {
-                    pin.setBatchID(0); // Manejo del error
+                    pin.setBatchID(0);
                 }
 
-                pin.setExpirationDate(formatter.formatCellValue(row.getCell(10))); // Expiration Date
+                pin.setExpirationDate(formatter.formatCellValue(row.getCell(10)));
 
-                listPinExcel.add(pin); // Añadir a la lista
+                listPinExcel.add(pin);
             }
 
-            return listPinExcel; // Retorna la lista de Pins
+            return listPinExcel;
 
         } catch (IOException | EncryptedDocumentException e) {
-            throw new RuntimeException("Error al cargar el archivo: " + e.getMessage(), e);
+            throw new RuntimeException("Error uploading file: " + e.getMessage(), e);
         }
     }
 
-
-    public List<Pins> consultPins(List<Pins> listExcel, LogTransactionServers serv) {
+    public List<Pins> consultPins(List<Pins> listExcel, int serverId) {
         List<Pins> listPin = new ArrayList<>();
 
         try {
-            // Obtener JdbcTemplate usando el método getJdbcTemplate
-            JdbcTemplate jdbcTemplate = getJdbcTemplate(serv.getServerId());
-
-            // Consulta para obtener los pins
+            JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId);
             String sqlPins = "SELECT * FROM pins WHERE control_no = ?";
 
             for (Pins controlNo : listExcel) {
-                // Ejecutar consulta para cada control_no
                 List<Pins> pinsFromDB = jdbcTemplate.query(sqlPins, new Object[]{controlNo.getControlNo()}, (rs, rowNum) -> {
                     Pins pin = new Pins();
-                    pin.setProductId(String.valueOf(rs.getInt("product_id")));
+                    pin.setProductId(rs.getString("productId"));
                     pin.setPin(rs.getString("pin"));
-                    pin.setControlNo(String.valueOf(rs.getInt("control_no")));
+                    pin.setControlNo(valueOf(rs.getInt("control_no")));
                     pin.setAmount(rs.getDouble("amount"));
                     pin.setAni(rs.getString("ani"));
-                    pin.setInsertDate(String.valueOf(rs.getDate("insert_date")));
-                    pin.setActivationDate(String.valueOf(rs.getDate("activation_date")));
-                    pin.setRecycleDate(String.valueOf(rs.getDate("recycle_date")));
+                    pin.setInsertDate(valueOf(rs.getDate("insert_date")));
+                    pin.setActivationDate(valueOf(rs.getDate("activation_date")));
+                    pin.setRecycleDate(valueOf(rs.getDate("recycle_date")));
                     pin.setTransactionCount(rs.getInt("transaction_count"));
                     pin.setBatchID(rs.getInt("BatchID"));
-                    pin.setExpirationDate(String.valueOf(rs.getDate("expirationDate")));
+                    pin.setExpirationDate(valueOf(rs.getDate("expirationDate")));
 
-                    // Consulta adicional para obtener el estado del pin
                     String sqlPinStatus = "SELECT code FROM PINStatus WHERE id = ?";
                     String state = jdbcTemplate.queryForObject(sqlPinStatus, new Object[]{rs.getInt("pinStatusId")}, String.class);
+                    pin.setState(state);
 
                     return pin;
                 });
 
-                // Agregar los pins obtenidos a la lista
                 listPin.addAll(pinsFromDB);
             }
 
             return listPin;
         } catch (Exception e) {
-            // Manejo de excepciones
-            throw new RuntimeException("Error al consultar pins: " + e.getMessage(), e);
+            throw new RuntimeException("Error when querying pins: " + e.getMessage(), e);
         }
     }
-
 }

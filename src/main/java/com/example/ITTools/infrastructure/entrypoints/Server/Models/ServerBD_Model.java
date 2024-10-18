@@ -39,9 +39,9 @@ public class ServerBD_Model {
     @Getter @Setter
     private String password;
 
-
     @Getter @Setter
-    private String dbFR;
+    @Column(name = "RecyclingDB")
+    private String recyclingDB;
 
     @Getter @Setter
     private int status;
@@ -63,7 +63,7 @@ public class ServerBD_Model {
         dto.setServerDB(this.serverDB);
         dto.setUserLogin(this.userLogin);
         dto.setPassword(this.password);
-        dto.setDbFR(this.dbFR);
+        dto.setRecyclingDB(this.recyclingDB);
         dto.setStatus(this.status);
         dto.setRegionId(this.region != null ? this.region.getIdRegion() : null);
         return dto;

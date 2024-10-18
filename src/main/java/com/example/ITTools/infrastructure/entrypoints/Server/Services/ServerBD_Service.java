@@ -63,9 +63,7 @@ public class ServerBD_Service {
             throw new IllegalArgumentException("The server " + serverDTO.getServerName() + " already exists");
         }
 
-        if (serverRepository.existsByIpServer(serverDTO.getIpServer())) {
-            throw new IllegalArgumentException("Server with the IP " + serverDTO.getIpServer() + " already exists");
-        }
+
 
         // Creación del servidor
         ServerBD_Model serverModel = new ServerBD_Model();
@@ -77,7 +75,7 @@ public class ServerBD_Service {
         serverModel.setServerDB(serverDTO.getServerDB());
         serverModel.setUserLogin(serverDTO.getUserLogin());
         serverModel.setPassword(serverDTO.getPassword());
-        serverModel.setDbFR(serverDTO.getDbFR());
+        serverModel.setRecyclingDB(serverDTO.getRecyclingDB());
         serverModel.setStatus(1);
         serverModel.setRegion(region);
 
@@ -111,7 +109,7 @@ public class ServerBD_Service {
         server.setPassword(serverDTO.getPassword());
         server.setPortServer(serverDTO.getPortServer());
         server.setServerDB(serverDTO.getServerDB());
-        server.setDbFR(serverDTO.getDbFR());
+        server.setRecyclingDB(serverDTO.getRecyclingDB());
 
         if (serverDTO.getRegionId() != null) {
             RegionModel region = regionService.getRegionById(serverDTO.getRegionId())

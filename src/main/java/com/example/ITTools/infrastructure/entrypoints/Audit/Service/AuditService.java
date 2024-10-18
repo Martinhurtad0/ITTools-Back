@@ -2,7 +2,9 @@ package com.example.ITTools.infrastructure.entrypoints.Audit.Service;
 
 
 import com.example.ITTools.infrastructure.entrypoints.Audit.Model.AuditModel;
+import com.example.ITTools.infrastructure.entrypoints.Audit.Model.RecyclingAudit;
 import com.example.ITTools.infrastructure.entrypoints.Audit.Repository.AuditRepository;
+import com.example.ITTools.infrastructure.entrypoints.Audit.Repository.RecyclingAuditRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,6 +20,9 @@ public class AuditService {
 
     @Autowired
     private AuditRepository auditRepository;
+
+    @Autowired
+    private RecyclingAuditRepository recyclingAuditRepository;
 
     public void audit(String userAction, HttpServletRequest request) {
         // Obtener el nombre del usuario autenticado
@@ -57,6 +62,35 @@ public class AuditService {
         }
         return remoteAddr;
     }
+
+    public class RecyclingAuditException extends RuntimeException {
+        public RecyclingAuditException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public RecyclingAudit saveRecyclingAudit(RecyclingAudit auditIn) {
+        RecyclingAudit objAudit = new RecyclingAudit();
+        try {
+            objAudit.setFilename(auditIn.getFilename()); // Esto debe funcionar si setFilename está definido en RecyclingAudit.
+            objAudit.setPin(auditIn.getPin());
+            objAudit.setTicket(auditIn.getTicket());
+            objAudit.setSKu(auditIn.getSKu());
+            objAudit.setControlNo(auditIn.getControlNo());
+            objAudit.setDateRecycling(auditIn.getDateRecycling());
+            objAudit.setUsername(auditIn.getUsername());
+            objAudit.setAuthorizationFor(auditIn.getAuthorizationFor());
+            objAudit.setStatusPinBefore(auditIn.getStatusPinBefore());
+            objAudit.setStatusPinAfter(auditIn.getStatusPinAfter());
+            objAudit.setDescriptionError(auditIn.getDescriptionError());
+
+            recyclingAuditRepository.save(objAudit); // Asegúrate de que recyclingAuditRepository esté definido e inyectado.
+            return objAudit;
+        } catch (Exception e) {
+            throw new RecyclingAuditException("Error al guardar la auditoría de reciclaje", e);
+        }
+    }
+
 
 
 }

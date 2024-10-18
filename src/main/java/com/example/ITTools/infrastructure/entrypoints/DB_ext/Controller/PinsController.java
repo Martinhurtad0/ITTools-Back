@@ -1,8 +1,8 @@
 package com.example.ITTools.infrastructure.entrypoints.DB_ext.Controller;
 
-
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.LogTransactionServers;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Pins;
+import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Request.RecyclingRequest;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Service.RecyclingPingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,8 +20,7 @@ public class PinsController {
     @Autowired
     private RecyclingPingService recyclingPing;
 
-
-
+    // Método para comprobar la conexión a la base de datos externa
     @GetMapping("/db-connection")
     public ResponseEntity<String> testConnection(@RequestParam int serverId) {
         try {
@@ -59,17 +58,28 @@ public class PinsController {
         }
     }
 
+    @PostMapping("/recycle")
+    public ResponseEntity<String> recyclePins(
+            @RequestBody List<Pins> selectedPinsTry,
+            @RequestParam int serverId,
+            @RequestParam String auditTicket,
+            @RequestParam String authorization) { // Ahora authorization es un parámetro obligatorio
 
-
-
-
+        try {
+            // Pasamos el autorizador a la lógica de reciclaje
+            recyclingPing.recyclePins(selectedPinsTry, serverId, auditTicket, authorization);
+            return ResponseEntity.ok("Pins recycled successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     // Endpoint para consultar pines
     @PostMapping("/consult")
-    public ResponseEntity<List<Pins>> consultPins(@RequestBody List<Pins> listExcel, @RequestBody LogTransactionServers serv) {
+    public ResponseEntity<List<Pins>> consultPins(@RequestBody List<Pins> listExcel, @RequestParam int serverId) {
         try {
             // Llamar al método para consultar los pines desde la base de datos
-            List<Pins> pins = recyclingPing.consultPins(listExcel, serv);
+            List<Pins> pins = recyclingPing.consultPins(listExcel, serverId);
             return ResponseEntity.ok(pins);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
@@ -95,19 +105,6 @@ public class PinsController {
         } catch (Exception e) {
             // Manejo de otras excepciones
             return ResponseEntity.badRequest().body(Collections.emptyList()); // Devuelve 400 BAD_REQUEST con una lista vacía
-        }
-    }
-
-
-    // Endpoint para actualizar un pin
-    @PostMapping("/update")
-    public ResponseEntity<Boolean> updatePin(@RequestBody Pins pinIn, @RequestBody LogTransactionServers serv) {
-        try {
-            // Llamar al método para actualizar un pin
-            boolean updated = recyclingPing.updatePin(pinIn, serv);
-            return ResponseEntity.ok(updated);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
         }
     }
 }
