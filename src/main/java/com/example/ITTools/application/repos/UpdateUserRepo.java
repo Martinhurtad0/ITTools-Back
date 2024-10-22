@@ -16,7 +16,7 @@ public class UpdateUserRepo implements IUpdateUserRepo {
     }
 
     @Override
-    public SaveUserDTO updateUser(UUID id, SaveUserDTO saveUserDTO) {
+    public SaveUserDTO updateUser(Long id, SaveUserDTO saveUserDTO) {
         return updateUser.updateUser(id, saveUserDTO);
     }
 }

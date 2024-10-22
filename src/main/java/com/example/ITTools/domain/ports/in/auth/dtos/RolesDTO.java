@@ -8,7 +8,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 public class RolesDTO {
-    private UUID id;
+    private Long id; // Cambia UUID a Long
     private String authority;
     private String description;
     private boolean status;

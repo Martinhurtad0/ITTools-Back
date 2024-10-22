@@ -4,5 +4,5 @@ import com.example.ITTools.domain.ports.in.auth.dtos.SaveUserDTO;
 import java.util.UUID;
 
 public interface IUpdateUserRepo {
-    SaveUserDTO updateUser(UUID id, SaveUserDTO saveUserDTO);
+    SaveUserDTO updateUser(Long id, SaveUserDTO saveUserDTO);
 }

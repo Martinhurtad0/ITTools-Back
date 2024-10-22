@@ -29,7 +29,7 @@ public class UpdateUserUseCaseImpl implements UpdateUser {
 
     @Override
     @Transactional
-    public SaveUserDTO updateUser(UUID id, SaveUserDTO saveUserDTO) {
+    public SaveUserDTO updateUser(Long id, SaveUserDTO saveUserDTO) {
         Optional<User> existingUser = userRepository.findById(id);
 
         if (existingUser.isPresent()) {

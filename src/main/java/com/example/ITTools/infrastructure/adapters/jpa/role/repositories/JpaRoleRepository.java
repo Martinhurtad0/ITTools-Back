@@ -9,8 +9,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface JpaRoleRepository extends JpaRepository<RoleEntity, UUID> {
+public interface JpaRoleRepository extends JpaRepository<RoleEntity, Long> {
     Optional<RoleEntity> findByAuthority(String authority);
-    Optional<RoleEntity> findById(UUID id);
+    Optional<RoleEntity> findById(Long id);
 }
 

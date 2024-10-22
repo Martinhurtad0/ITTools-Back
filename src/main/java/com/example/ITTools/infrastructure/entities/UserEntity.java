@@ -14,8 +14,8 @@ import java.util.UUID;
 @Table(name = "local_user")
 public class UserEntity implements UserDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(unique = true, name = "email")
     private String username;

@@ -42,7 +42,7 @@ public class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
-    public Optional<User> findById(UUID id) {
+    public Optional<User> findById(Long id) {
         return jpaUserRepository.findById(id).map(this::mapToDomain);
     }
     public class EmailAlreadyExistsException extends RuntimeException {
@@ -88,7 +88,7 @@ public class UserRepositoryAdapter implements UserRepository {
 
 
     @Override
-    public void delete(UUID id) {
+    public void delete(Long id) {
         // Buscar el usuario antes de eliminarlo para obtener sus detalles
         UserEntity user = jpaUserRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));

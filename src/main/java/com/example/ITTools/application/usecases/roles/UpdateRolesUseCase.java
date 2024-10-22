@@ -17,7 +17,7 @@ public class UpdateRolesUseCase {
         this.roleRepositoryPort = roleRepositoryPort;
     }
 
-    public RolesDTO updateRole(UUID id, RolesDTO roleDTO) {
+    public RolesDTO updateRole(Long id, RolesDTO roleDTO) {
         // Primero encontrar el rol existente por su ID
         Optional<Role> existingRoleOpt = roleRepositoryPort.findById(id);
 

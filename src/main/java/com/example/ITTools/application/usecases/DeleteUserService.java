@@ -14,7 +14,7 @@ public class DeleteUserService {
         this.deleteUserRepo = deleteUserRepo;
     }
 
-    public void deleteUser(UUID id) {
+    public void deleteUser(Long id) {
         deleteUserRepo.deleteUser(id);
     }
 }

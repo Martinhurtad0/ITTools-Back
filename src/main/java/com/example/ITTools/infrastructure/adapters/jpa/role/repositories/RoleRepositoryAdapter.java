@@ -89,7 +89,7 @@ public class RoleRepositoryAdapter implements RoleRepositoryPort {
     }
 
     @Override
-    public Optional<Role> findById(UUID id) {
+    public Optional<Role> findById(Long id) {
         Optional<RoleEntity> roleEntity = jpaRoleRepository.findById(id);
         return roleEntity.map(this::mapToDomain);
     }
@@ -101,7 +101,7 @@ public class RoleRepositoryAdapter implements RoleRepositoryPort {
     }
 
     @Override
-    public void delete(UUID id) {
+    public void delete(Long id) {
         try {
             // Obtener el rol antes de eliminar para registrar detalles de auditoría
             Optional<RoleEntity> roleEntity = jpaRoleRepository.findById(id);

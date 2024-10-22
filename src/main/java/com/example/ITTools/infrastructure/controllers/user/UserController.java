@@ -35,7 +35,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Object> updateUser(
-            @PathVariable("id") UUID id,
+            @PathVariable("id") Long id,
             @RequestBody SaveUserDTO saveUserDTO) {
         try {
             SaveUserDTO updatedUser = updateUserUseCaseImpl.updateUser(id, saveUserDTO);
@@ -57,7 +57,7 @@ public class UserController {
 
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable("id") UUID id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable("id") Long id) {
         try {
             deleteUserService.deleteUser(id); // Usa el caso de uso
             return ResponseEntity.noContent().build(); // HTTP 204 No Content

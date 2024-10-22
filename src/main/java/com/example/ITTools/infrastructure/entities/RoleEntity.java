@@ -13,8 +13,8 @@ import java.util.UUID;
 @Table(name = "role")
 public class RoleEntity implements GrantedAuthority {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String authority;
     private String description;
     private boolean status;

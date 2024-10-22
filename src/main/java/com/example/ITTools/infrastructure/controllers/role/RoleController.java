@@ -48,7 +48,7 @@ public class RoleController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> updateRole(@PathVariable UUID id, @RequestBody RolesDTO roleDTO) {
+    public ResponseEntity<Object> updateRole(@PathVariable Long id, @RequestBody RolesDTO roleDTO) {
         try {
             RolesDTO updatedRole = updateRolesUseCase.updateRole(id, roleDTO);
             return new ResponseEntity<>(updatedRole, HttpStatus.OK);
@@ -65,7 +65,7 @@ public class RoleController {
 
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteRole(@PathVariable UUID id) {
+    public ResponseEntity<String> deleteRole(@PathVariable Long id) {
         try {
             deleteRolesUseCase.deleteRole(id);
             return ResponseEntity.noContent().build();

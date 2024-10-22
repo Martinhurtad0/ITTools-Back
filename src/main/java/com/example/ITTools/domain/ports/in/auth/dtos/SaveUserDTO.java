@@ -9,7 +9,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 public class SaveUserDTO {
-    private UUID id;
+    private Long id;
     private String email;
     private String password;
     private String full_name;

@@ -16,7 +16,7 @@ public class DeleteRolesUseCase implements DeleteRoles {
     }
 
     @Override
-    public void deleteRole(UUID id) {
+    public void deleteRole(Long id) {
         roleRepositoryPort.delete(id);
     }
 }
