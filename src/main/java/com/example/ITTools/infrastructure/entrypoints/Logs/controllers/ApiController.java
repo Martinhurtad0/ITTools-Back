@@ -20,6 +20,13 @@ public class ApiController {
         return apiService.getLogs(agentId, region);
     }
 
+    @PostMapping("/zip/single/{agentId}")
+    public ResponseEntity<byte[]> zipSingleLogFile(
+            @PathVariable int agentId,
+            @RequestParam String filename,
+            @RequestParam String region) {
+        return apiService.zipSingleLogFile(agentId, filename, region);
+    }
 
     @PostMapping("/zip/{agentId}")
     public ResponseEntity<byte[]> zipLogFile(@PathVariable int agentId, @RequestBody List<String> filenames, @RequestParam String region) {

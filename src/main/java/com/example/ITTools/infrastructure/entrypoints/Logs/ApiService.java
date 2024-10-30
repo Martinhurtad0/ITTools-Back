@@ -112,6 +112,40 @@ public class ApiService {
         }
     }
 
+    public ResponseEntity<byte[]> zipSingleLogFile(int agentId, String filename, String region) {
+        String action = "Downloading single log to the region ID: " + region + ", Agent ID: " + agentId;
+        try {
+            String webServiceUrl = getWebServiceUrl(agentId);
+            String token = getJwtToken(webServiceUrl);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + token);
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("file", filename);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<byte[]> response = restTemplate.exchange(
+                    webServiceUrl + "/log/zip",  // Cambia el endpoint a "/log/zip"
+                    HttpMethod.POST,
+                    entity,
+                    byte[].class
+            );
+
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            responseHeaders.setContentDispositionFormData("attachment", filename + ".zip");
+
+            auditService.audit(action, request);
+            return new ResponseEntity<>(response.getBody(), responseHeaders, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(("Error: " + e.getMessage()).getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
     public String filterLogsArchiveByDate(int agentId, String date, String region) {
         String action = "Get archive logs in the region ID: " + region + ", Agent ID: " + agentId + ", Date: " + date ; // Se incluye la región
