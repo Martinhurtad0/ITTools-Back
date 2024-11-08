@@ -70,26 +70,34 @@ public class AuditService {
     }
 
     public RecyclingAudit saveRecyclingAudit(RecyclingAudit auditIn) {
-        RecyclingAudit objAudit = new RecyclingAudit();
-        try {
-            objAudit.setFilename(auditIn.getFilename()); // Esto debe funcionar si setFilename está definido en RecyclingAudit.
-            objAudit.setPin(auditIn.getPin());
-            objAudit.setTicket(auditIn.getTicket());
-            objAudit.setSKu(auditIn.getSKu());
-            objAudit.setControlNo(auditIn.getControlNo());
-            objAudit.setDateRecycling(auditIn.getDateRecycling());
-            objAudit.setUsername(auditIn.getUsername());
-            objAudit.setAuthorizationFor(auditIn.getAuthorizationFor());
-            objAudit.setStatusPinBefore(auditIn.getStatusPinBefore());
-            objAudit.setStatusPinAfter(auditIn.getStatusPinAfter());
-            objAudit.setDescriptionError(auditIn.getDescriptionError());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userName = authentication.getName();
 
-            recyclingAuditRepository.save(objAudit); // Asegúrate de que recyclingAuditRepository esté definido e inyectado.
+        try {
+            // Crear una nueva instancia de RecyclingAudit utilizando el constructor adecuado
+            RecyclingAudit objAudit = new RecyclingAudit(
+                    auditIn.getFilename(),
+                    auditIn.getPin(),
+                    auditIn.getTicket(),
+                    auditIn.getSKu(),
+                    auditIn.getControlNo(),
+                    auditIn.getDateRecycling(),
+                    userName, // Usando el nombre del usuario autenticado
+                    auditIn.getAuthorizationFor(),
+                    auditIn.getStatusPinBefore(),
+                    auditIn.getStatusPinAfter(),
+                    auditIn.getDescriptionError()
+            );
+
+            // Guardar el objeto de auditoría en el repositorio
+            recyclingAuditRepository.save(objAudit);
             return objAudit;
+
         } catch (Exception e) {
             throw new RecyclingAuditException("Error al guardar la auditoría de reciclaje", e);
         }
     }
+
 
 
 

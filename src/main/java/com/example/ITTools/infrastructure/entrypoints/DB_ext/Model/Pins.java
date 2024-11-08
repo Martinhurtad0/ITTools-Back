@@ -28,6 +28,8 @@ public class Pins {
         private String expirationDate;
     @Getter @Setter
     private String state;
+    @Getter @Setter
+    private int pinStatusId;
 
         // Getters y Setters
 

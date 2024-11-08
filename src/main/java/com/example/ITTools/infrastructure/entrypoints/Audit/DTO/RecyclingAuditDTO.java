@@ -18,7 +18,7 @@ public class RecyclingAuditDTO {
 
     private String ticket;
 
-    private Long sKu;
+    private String sKu;
 
     private String controlNo;
 

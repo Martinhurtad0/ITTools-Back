@@ -1,59 +1,25 @@
 package com.example.ITTools.infrastructure.entrypoints.DB_ext.Controller;
 
-
-
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Pins;
-
-
-import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Request.RecyclePinsResponse;
-import com.example.ITTools.infrastructure.entrypoints.DB_ext.Service.RecyclingPingService;
-
-
+import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Request.QuarantinePinsResponse;
+import com.example.ITTools.infrastructure.entrypoints.DB_ext.Service.QuarantinePinService;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-
-import java.util.*;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/pins")
-public class PinsController {
+@RequestMapping("/api/quarantine")
+public class QuarantinePinsController {
 
     @Autowired
-    private RecyclingPingService recyclingPing;
+    private  QuarantinePinService quarantinePinService;
 
-
-
-
-
-
-    // Endpoint para listar un pin en particular
-    @GetMapping("/list")
-    public ResponseEntity<List<Pins>> listPin(@RequestParam("pin") String pin, @RequestParam("serverId") int serverId) {
-        try {
-            List<Pins> pins = recyclingPing.listPin(pin, serverId);
-
-            if (pins == null || pins.isEmpty()) {
-                return ResponseEntity.noContent().build();
-            }
-
-            return ResponseEntity.ok(pins);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.emptyList());
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Collections.emptyList());
-        }
-    }
-
-
-    @PostMapping("/recycle")
-    public ResponseEntity<RecyclePinsResponse> recyclePins(
+    @PostMapping("/quarantinePins")
+    public ResponseEntity<QuarantinePinsResponse> quarantinePins(
             @RequestBody List<Pins> pinsList,
             @RequestParam int serverId,
             @RequestParam String authorization,
@@ -64,7 +30,7 @@ public class PinsController {
         // Obtiene el nombre de usuario
 
         try {
-            RecyclePinsResponse response = recyclingPing.recycleMultiplePins(pinsList, serverId, authorization, ticket, filename);
+            QuarantinePinsResponse response = quarantinePinService.quarantinePins(pinsList, serverId, authorization, ticket, filename);
 
 
             return ResponseEntity.ok(response);
@@ -75,8 +41,9 @@ public class PinsController {
         }
     }
 
+
     @PostMapping("/upload")
-    public ResponseEntity<RecyclePinsResponse> recyclePinsFromFile(
+    public ResponseEntity<QuarantinePinsResponse> recyclePinsFromFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("serverId") int serverId,
             @RequestParam("Authorization") String authorization,
@@ -86,7 +53,7 @@ public class PinsController {
 
         try {
             // Llama al método para reciclar pines desde el archivo
-            RecyclePinsResponse response = recyclingPing.recyclePinsFromFile(file, serverId, authorization, ticket);
+            QuarantinePinsResponse response = quarantinePinService.recyclePinsFromFile(file, serverId, authorization, ticket);
             return ResponseEntity.ok(response); // Devuelve la respuesta con un 200 OK
 
         } catch (IllegalArgumentException e) {
@@ -100,5 +67,8 @@ public class PinsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500 Internal Server Error
         }
     }
+
+
+
 
 }

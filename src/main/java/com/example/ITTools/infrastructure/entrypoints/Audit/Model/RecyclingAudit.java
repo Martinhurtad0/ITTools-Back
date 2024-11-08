@@ -23,7 +23,7 @@ public class RecyclingAudit {
     private String ticket;
     @Getter @Setter
     @NonNull
-    private Long sKu;
+    private String sKu;
     @Getter @Setter
     @NonNull
     private String controlNo;
@@ -44,6 +44,10 @@ public class RecyclingAudit {
     @Getter @Setter
     private String descriptionError;
 
+
+    public RecyclingAudit() {
+        // Puedes dejarlo vacío o inicializar valores predeterminados si lo deseas.
+    }
     public RecyclingAuditDTO toDTO(RecyclingAudit recyclingAudit) {
         RecyclingAuditDTO dto = new RecyclingAuditDTO();
 
@@ -62,5 +66,22 @@ public class RecyclingAudit {
 
         return dto;
     }
+
+    public RecyclingAudit(String filename, String pin, String ticket, String productId, String controlNo,
+                          String recycleDate, String username, String authorizationFor,
+                          String statusPinBefore, String statusPinAfter, String descriptionError) {
+        this.filename = filename;
+        this.pin = pin;
+        this.ticket = ticket;
+        this.sKu = productId;
+        this.controlNo = controlNo;
+        this.dateRecycling = recycleDate;
+        this.username = username;
+        this.authorizationFor = authorizationFor;
+        this.statusPinBefore = statusPinBefore;
+        this.statusPinAfter = statusPinAfter;
+        this.descriptionError = descriptionError;
+    }
+
 
 }

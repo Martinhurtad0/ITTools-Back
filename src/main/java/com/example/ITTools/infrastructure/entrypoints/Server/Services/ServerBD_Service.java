@@ -97,10 +97,11 @@ public class ServerBD_Service {
             throw new IllegalArgumentException("The server " + serverDTO.getServerName() + " already exists");
         }
 
+        /*
         if (!server.getIpServer().equals(serverDTO.getIpServer()) &&
                 serverRepository.existsByIpServer(serverDTO.getIpServer())) {
             throw new IllegalArgumentException("Server with the IP " + serverDTO.getIpServer() + " already exists");
-        }
+        }*/
 
         // Actualización del servidor
         server.setServerName(serverDTO.getServerName());
