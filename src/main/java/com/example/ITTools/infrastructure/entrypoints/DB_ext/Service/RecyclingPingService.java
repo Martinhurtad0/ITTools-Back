@@ -224,7 +224,7 @@ public class RecyclingPingService {
                     }
                 } else {
                     // Si el estado no es 3, agregar a la lista de pines no actualizados
-                    errorMessages.add("The pin " + pin.getPin() + " (Status: " + pinStatusId + ") is not in the 'SOLD' state. It cannot be recycled");
+                    errorMessages.add("The pin " + pin.getPin() + "  is not in the 'SOLD' state. It cannot be recycled");
                     notUpdatedPins.add(pin.getPin());
                     error = "Error recycling pin, incorrect status: " + pinStatusId; // Mensaje de error
 

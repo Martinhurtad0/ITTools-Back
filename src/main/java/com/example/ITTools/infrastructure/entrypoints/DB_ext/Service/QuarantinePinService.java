@@ -68,11 +68,8 @@ public class QuarantinePinService {
 
                 // Solo actualizar si el estado es igual a 1 (suponiendo que 1 es el estado 'SOLD')
                 if (pinStatusId == 1) {
-                    String sqlUpdate = "UPDATE pins " +
-                            "SET pinstatusid = ?, recycle_date = GETDATE() " +
-                            "FROM pins p " +
-                            "INNER JOIN ArchivoPines i ON p.pin = i.column1 AND p.product_id = i.column0 " +
-                            "WHERE p.pinstatusid = 1 AND p.pin = ? AND p.product_id = ?";
+                    String sqlUpdate = "UPDATE pins SET pinstatusid = ?, recycle_date = GETDATE() WHERE pin = ? AND product_id = ? AND pinstatusid = 1";
+
 
                     int updatedRows = jdbcTemplate.update(sqlUpdate,
                             17,  // Estado 'CUARENTENA'
@@ -106,7 +103,7 @@ public class QuarantinePinService {
                     }
                 } else {
                     // Si el estado no es 1, agregar a la lista de pines no actualizados
-                    errorMessages.add("The pin " + pin.getPin() + " (Status: " + pinStatusId + ") is not in the 'AVALAIBLE' state. It cannot be moved to quarantine.");
+                    errorMessages.add("The pin " + pin.getPin() + "  is not in the 'AVALAIBLE' state. It cannot be moved to quarantine.");
                     notUpdatedPins.add(pin.getPin());
                     error = "Error moving to quarantine, incorrect status: " + pinStatusId; // Mensaje de error
 
@@ -126,15 +123,7 @@ public class QuarantinePinService {
                     auditService.saveRecyclingAudit(audit);
                 }
 
-            } catch (DataAccessException e) {
-                if (e.getMessage().contains("ArchivoPines")) { // Verifica si la excepción es por la falta de la tabla
-                    errorMessages.add("Error: The table 'ArchivoPines' does not exist.");
-                } else {
-                    errorMessages.add("Error moving pin to quarantine: " + (pin != null ? pin.getPin() : "Unknown") + " - " + e.getMessage());
-                    notUpdatedPins.add(pin != null ? pin.getPin() : "unknown");
-                }
-
-            } catch (Exception e) {
+            }  catch (Exception e) {
                 errorMessages.add("Unexpected error moving pin to quarantine: " + (pin != null ? pin.getPin() : "Unknown") + " - " + e.getMessage());
                 notUpdatedPins.add(pin != null ? pin.getPin() : "Desconocido");
             }

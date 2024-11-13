@@ -104,6 +104,9 @@ public class ServerBD_Service {
         }*/
 
         // Actualización del servidor
+
+        server.setUserLogin(serverDTO.getUserLogin());
+        server.setDescription(serverDTO.getDescription());
         server.setServerName(serverDTO.getServerName());
         server.setIpServer(serverDTO.getIpServer());
         server.setInstance(serverDTO.getInstance());
