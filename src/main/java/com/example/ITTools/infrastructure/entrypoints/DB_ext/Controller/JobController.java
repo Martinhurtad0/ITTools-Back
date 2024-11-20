@@ -2,6 +2,7 @@ package com.example.ITTools.infrastructure.entrypoints.DB_ext.Controller;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.ListJob;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.ListWho5;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Service.DatabaseService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.http.HttpStatus;
@@ -26,8 +27,8 @@ public class JobController {
      * @return Lista de trabajos en ejecución.
      */
     @GetMapping("/runningJobs/{serverId}")
-    public List<ListJob> getRunningJobs(@PathVariable int serverId) {
-        return databaseService.listRunningJobs(serverId);
+    public List<ListJob> getRunningJobs(@PathVariable int serverId,  HttpServletRequest request) {
+        return databaseService.listRunningJobs(serverId, request);
     }
 
     /**
@@ -47,9 +48,9 @@ public class JobController {
      * @return Lista de procesos en ejecución.
      */
     @GetMapping("/runningProcess/{serverId}")
-    public List<ListWho5> getRunningProcesses(@PathVariable int serverId) {
+    public List<ListWho5> getRunningProcesses(@PathVariable int serverId, HttpServletRequest request) {
         try {
-            return databaseService.listQuerys(serverId);
+            return databaseService.listQuerys(serverId, request);
         } catch (Exception ex) {
             // Manejar cualquier excepción no verificada lanzada por el servicio
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error al obtener procesos", ex);

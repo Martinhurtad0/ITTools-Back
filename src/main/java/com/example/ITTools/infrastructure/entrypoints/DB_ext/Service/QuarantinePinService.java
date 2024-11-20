@@ -5,8 +5,10 @@ import com.example.ITTools.infrastructure.entrypoints.Audit.Service.AuditService
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Pins;
 
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Request.QuarantinePinsResponse;
+import com.example.ITTools.infrastructure.entrypoints.Server.Models.ServerBD_Model;
+import com.example.ITTools.infrastructure.entrypoints.Server.Repositories.ServerBD_Repository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,15 +24,25 @@ public class QuarantinePinService {
     private RecyclingPingService recyclingPingService;
 
     @Autowired
+    private ServerBD_Repository serverBDRepository;
+    @Autowired
     private AuditService auditService;
 
 
-    public QuarantinePinsResponse quarantinePins(List<Pins> pinsList, int serverId, String authorizedBy, String ticketNumber, String fileName) {
+    public QuarantinePinsResponse quarantinePins(List<Pins> pinsList, int serverId, String authorizedBy, String ticketNumber, String fileName, HttpServletRequest request) {
         List<String> quarantinedPins = new ArrayList<>();
         List<String> notUpdatedPins = new ArrayList<>();
         List<String> errorMessages = new ArrayList<>();
         List<String> satisfyingMessages= new ArrayList<>();
         JdbcTemplate jdbcTemplate = recyclingPingService.getJdbcTemplate(serverId);
+        ServerBD_Model server = serverBDRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+
+        String DBName = server.getRecyclingDB();
+        String regionName = server.getRegion().getNameRegion();
+
+        auditService.audit("Run pin quarantine, Region: "+ regionName +": ServerId: "+serverId+ ", Database name: "+ DBName, request);
+
 
         for (Pins pin : pinsList) {
             String statusBefore = null;
@@ -123,6 +135,7 @@ public class QuarantinePinService {
                     auditService.saveRecyclingAudit(audit);
                 }
 
+
             }  catch (Exception e) {
                 errorMessages.add("Unexpected error moving pin to quarantine: " + (pin != null ? pin.getPin() : "Unknown") + " - " + e.getMessage());
                 notUpdatedPins.add(pin != null ? pin.getPin() : "Desconocido");
@@ -134,7 +147,7 @@ public class QuarantinePinService {
 
 
 
-    public QuarantinePinsResponse recyclePinsFromFile(MultipartFile file, int serverId, String authorizedBy, String ticketNumber) {
+    public QuarantinePinsResponse recyclePinsFromFile(MultipartFile file, int serverId, String authorizedBy, String ticketNumber, HttpServletRequest request) {
         List<Pins> pinsList = new ArrayList<>();
         String fileName = file.getOriginalFilename();
 
@@ -150,7 +163,7 @@ public class QuarantinePinService {
             throw new RuntimeException("Error reading file: " + e.getMessage(), e);
         }
 
-        return quarantinePins(pinsList, serverId, authorizedBy, ticketNumber, fileName);
+        return quarantinePins(pinsList, serverId, authorizedBy, ticketNumber, fileName, request);
     }
 
 

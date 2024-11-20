@@ -6,6 +6,8 @@ package com.example.ITTools.infrastructure.entrypoints.Audit.DTO;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
+
 @Getter
 @Setter
 public class RecyclingAuditDTO {
@@ -22,7 +24,7 @@ public class RecyclingAuditDTO {
 
     private String controlNo;
 
-    private String dateRecycling;
+    private Date recycleDate;
 
     private String username;
 

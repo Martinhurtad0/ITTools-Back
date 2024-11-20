@@ -1,8 +1,10 @@
 package com.example.ITTools.infrastructure.entrypoints.DB_ext.Service;
+import com.example.ITTools.infrastructure.entrypoints.Audit.Service.AuditService;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Databases;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Properties;
 import com.example.ITTools.infrastructure.entrypoints.Server.Models.ServerBD_Model;
 import com.example.ITTools.infrastructure.entrypoints.Server.Repositories.ServerBD_Repository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,6 +21,8 @@ public class PropertiesService {
 
     @Autowired
     private ServerBD_Repository serverBDRepository;
+    @Autowired
+    private AuditService auditService;
 
     public JdbcTemplate getJdbcTemplate(int serverId) {
         ServerBD_Model server = serverBDRepository.findById(serverId)
@@ -39,9 +43,11 @@ public class PropertiesService {
      * @param serverId ID del servidor para obtener las bases de datos.
      * @return Lista de bases de datos.
      */
-    public List<Databases> listDatabases(int serverId) {
+    public List<Databases> listDatabases(int serverId, HttpServletRequest request) {
         String sql = "SELECT database_id, name FROM sys.databases";
         JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId);
+
+
 
         return jdbcTemplate.query(sql, new RowMapper<Databases>() {
             @Override
@@ -61,9 +67,18 @@ public class PropertiesService {
      * @param dataName Nombre de la base de datos.
      * @return Lista de propiedades.
      */
-    public List<Properties> listProperties(int serverId, String dataName) {
+    public List<Properties> listProperties(int serverId, String dataName, HttpServletRequest request) {
+
+        ServerBD_Model server = serverBDRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+
+        String DBName = server.getServerDB();
+        String regionName = server.getRegion().getNameRegion();
+
         String sql = String.format("SELECT property_id, project, property, module, value, instance FROM %s.dbo.properties", dataName);
         JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId);
+
+        auditService.audit("Run the property list, Region: "+ regionName+ ", ServerId: "+ serverId+ ", Database name: "+DBName, request);
 
         return jdbcTemplate.query(sql, new RowMapper<Properties>() {
             @Override

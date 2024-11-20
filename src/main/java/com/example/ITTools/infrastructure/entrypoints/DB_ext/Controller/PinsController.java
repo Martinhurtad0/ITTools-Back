@@ -9,6 +9,7 @@ import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Request.Recyc
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Service.RecyclingPingService;
 
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.http.HttpStatus;
@@ -58,13 +59,14 @@ public class PinsController {
             @RequestParam int serverId,
             @RequestParam String authorization,
             @RequestParam String ticket,
-            @RequestParam (required = false)String filename) {
+            @RequestParam (required = false)String filename,
+            HttpServletRequest request) {
 
         // Obtiene el usuario autenticado desde el contexto de seguridad
         // Obtiene el nombre de usuario
 
         try {
-            RecyclePinsResponse response = recyclingPing.recycleMultiplePins(pinsList, serverId, authorization, ticket, filename);
+            RecyclePinsResponse response = recyclingPing.recycleMultiplePins(pinsList, serverId, authorization, ticket, filename, request);
 
 
             return ResponseEntity.ok(response);
@@ -80,13 +82,14 @@ public class PinsController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("serverId") int serverId,
             @RequestParam("Authorization") String authorization,
-            @RequestParam("ticket") String ticket) {
+            @RequestParam("ticket") String ticket,
+            HttpServletRequest request){
 
 
 
         try {
             // Llama al método para reciclar pines desde el archivo
-            RecyclePinsResponse response = recyclingPing.recyclePinsFromFile(file, serverId, authorization, ticket);
+            RecyclePinsResponse response = recyclingPing.recyclePinsFromFile(file, serverId, authorization, ticket, request);
             return ResponseEntity.ok(response); // Devuelve la respuesta con un 200 OK
 
         } catch (IllegalArgumentException e) {
