@@ -8,6 +8,7 @@ import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Request.Recyc
 import com.example.ITTools.infrastructure.entrypoints.Server.Models.ServerBD_Model;
 import com.example.ITTools.infrastructure.entrypoints.Server.Repositories.ServerBD_Repository;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -26,6 +27,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -109,7 +111,7 @@ public class RecyclingPingService {
                 pin.setAni(rs.getString("ani"));
                 pin.setInsertDate(valueOf(rs.getDate("insert_date")));
                 pin.setActivationDate(valueOf(rs.getDate("activation_date")));
-                pin.setRecycleDate(valueOf(rs.getDate("recycle_date")));
+                pin.setRecycleDate(rs.getDate("recycle_date"));
                 pin.setTransactionCount(rs.getInt("transaction_count"));
                 pin.setBatchID(rs.getInt("BatchID"));
                 pin.setExpirationDate(valueOf(rs.getDate("expirationDate")));
@@ -140,18 +142,27 @@ public class RecyclingPingService {
 
 
 
-    public RecyclePinsResponse recycleMultiplePins(List<Pins> pinsList, int serverId, String authorizedBy, String ticketNumber, String fileName) {
+    public RecyclePinsResponse recycleMultiplePins(List<Pins> pinsList, int serverId, String authorizedBy, String ticketNumber, String fileName, HttpServletRequest request) {
         List<String> recycledPins = new ArrayList<>();
         List<String> notUpdatedPins = new ArrayList<>();
         List<String> errorMessages = new ArrayList<>();
         List<String> satisfyingMessages = new ArrayList<>();
         JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId);
 
+        ServerBD_Model server = serverBDRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+
+        String DBname = server.getRecyclingDB();
+        String regionName = server.getRegion().getNameRegion();
+        auditService.audit("Run pin recycling, Region: "+regionName+ ", ServerId:  "+serverId+", Database name: "+DBname, request);
+
         for (Pins pin : pinsList) {
-           String recycleDate = pin.getRecycleDate() ;// Inicializa antes del bloque try
+
             String statusBefore = null;
             String statusAfter = null; // Inicializa antes del bloque try
             String error = ""; // Inicializa antes del bloque try
+
+            Date recycledate = new Timestamp(System.currentTimeMillis());
 
             try {
                 // Obtener detalles del pin desde la base de datos
@@ -184,7 +195,7 @@ public class RecyclingPingService {
 
                 // Solo actualizar si el estado es igual a 3
                 if (pinStatusId == 3) {
-                    String sqlUpdate = "UPDATE pins SET activation_date = ?, recycle_date = GETDATE(), pinStatusId = ? " +
+                    String sqlUpdate = "UPDATE pins SET activation_date = ?, recycle_date = getdate(), pinStatusId = ? " +
                             "WHERE pin = ? AND product_id = ? AND control_no = ?";
 
 
@@ -202,6 +213,8 @@ public class RecyclingPingService {
                     statusAfter = "AVALAIBLE"; // Asumimos que el estado después de reciclar es 'reciclado'
                     error="Pin recycled successfully";
 
+
+
                     if (updatedRows > 0) {
                         RecyclingAudit audit = new RecyclingAudit(
                                 fileName,
@@ -209,7 +222,7 @@ public class RecyclingPingService {
                                 ticketNumber,
                                 pin.getProductId(),
                                 pin.getControlNo(),
-                                pin.getRecycleDate(),
+                                recycledate,
                                 null, // El usuario se obtiene automáticamente
                                 authorizedBy,
                                 statusBefore,
@@ -234,7 +247,7 @@ public class RecyclingPingService {
                             ticketNumber,
                             pin.getProductId(),
                             pin.getControlNo(),
-                            pin.getRecycleDate(),
+                            null,
                             null, // El usuario se obtiene automáticamente
                             authorizedBy,
                             statusBefore,
@@ -242,7 +255,9 @@ public class RecyclingPingService {
                             error
                     );
                     auditService.saveRecyclingAudit(audit);
+
                 }
+
 
             } catch (DataAccessException e) {
                 errorMessages.add("Error recycling pin: " + (pin != null ? pin.getPin() : "Unknown") + " - " + e.getMessage());
@@ -264,7 +279,7 @@ public class RecyclingPingService {
 
 
 
-    public RecyclePinsResponse recyclePinsFromFile(MultipartFile file, int serverId, String authorizedBy, String ticketNumber) {
+    public RecyclePinsResponse recyclePinsFromFile(MultipartFile file, int serverId, String authorizedBy, String ticketNumber, HttpServletRequest request) {
         List<Pins> pinsList = new ArrayList<>();
         String fileName = file.getOriginalFilename();
 
@@ -280,7 +295,7 @@ public class RecyclingPingService {
             throw new RuntimeException("Error reading file: " + e.getMessage(), e);
         }
 
-        return recycleMultiplePins(pinsList, serverId, authorizedBy, ticketNumber, fileName);
+        return recycleMultiplePins(pinsList, serverId, authorizedBy, ticketNumber, fileName, request);
     }
 
 

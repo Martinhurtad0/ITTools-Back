@@ -3,6 +3,8 @@ package com.example.ITTools.infrastructure.entrypoints.DB_ext.Model;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
+
 public class Pins {
    @Getter @Setter
         private String pin;
@@ -19,7 +21,7 @@ public class Pins {
     @Getter @Setter
         private String activationDate;
     @Getter @Setter
-        private String recycleDate;
+        private Date recycleDate;
     @Getter @Setter
         private int transactionCount;// Asegúrate de que el valor en JSON sea un número
     @Getter @Setter

@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+import java.util.Date;
+
 @Entity
 @Table(name="RecyclingTable")
 public class RecyclingAudit {
@@ -29,7 +31,7 @@ public class RecyclingAudit {
     private String controlNo;
     @Getter @Setter
     @NonNull
-    private String dateRecycling;
+    private Date recycleDate;
     @Getter @Setter
     private String username;
     @NonNull
@@ -57,7 +59,7 @@ public class RecyclingAudit {
         dto.setTicket(recyclingAudit.getTicket());
         dto.setSKu(recyclingAudit.getSKu());
         dto.setControlNo(recyclingAudit.getControlNo());
-        dto.setDateRecycling(recyclingAudit.getDateRecycling());
+        dto.setRecycleDate(recyclingAudit.getRecycleDate());
         dto.setUsername(recyclingAudit.getUsername());
         dto.setAuthorizationFor(recyclingAudit.getAuthorizationFor());
         dto.setStatusPinBefore(recyclingAudit.getStatusPinBefore());
@@ -68,14 +70,14 @@ public class RecyclingAudit {
     }
 
     public RecyclingAudit(String filename, String pin, String ticket, String productId, String controlNo,
-                          String recycleDate, String username, String authorizationFor,
+                          Date recycleDate, String username, String authorizationFor,
                           String statusPinBefore, String statusPinAfter, String descriptionError) {
         this.filename = filename;
         this.pin = pin;
         this.ticket = ticket;
         this.sKu = productId;
         this.controlNo = controlNo;
-        this.dateRecycling = recycleDate;
+        this.recycleDate = recycleDate;
         this.username = username;
         this.authorizationFor = authorizationFor;
         this.statusPinBefore = statusPinBefore;

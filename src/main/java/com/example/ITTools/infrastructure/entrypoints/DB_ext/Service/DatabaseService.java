@@ -1,9 +1,11 @@
 package com.example.ITTools.infrastructure.entrypoints.DB_ext.Service;
 
+import com.example.ITTools.infrastructure.entrypoints.Audit.Service.AuditService;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.ListJob;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.ListWho5;
 import com.example.ITTools.infrastructure.entrypoints.Server.Models.ServerBD_Model;
 import com.example.ITTools.infrastructure.entrypoints.Server.Repositories.ServerBD_Repository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,6 +23,9 @@ public class DatabaseService {
 
     @Autowired
     private ServerBD_Repository serverBDRepository;
+
+    @Autowired
+    private AuditService auditService;
 
     public JdbcTemplate getJdbcTemplate(int serverId) {
         ServerBD_Model server = serverBDRepository.findById(serverId)
@@ -41,7 +46,15 @@ public class DatabaseService {
      * @param serverId ID del servidor para obtener los trabajos.
      * @return Lista de trabajos en ejecución.
      */
-    public List<ListJob> listRunningJobs(int serverId) {
+    public List<ListJob> listRunningJobs(int serverId,  HttpServletRequest request) {
+
+        ServerBD_Model server = serverBDRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+
+        String DBName = server.getServerDB();
+        String regionName = server.getRegion().getNameRegion();
+
+
         String sql = "SELECT\n" +
                 "    ja.job_id,\n" +
                 "    j.name AS job_name,\n" +
@@ -57,6 +70,7 @@ public class DatabaseService {
                 "ORDER BY j.name";
 
         JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId);
+        auditService.audit("Execute jobs, Region: "+ regionName +", ServerId "+ serverId+ " , Database name "+DBName ,request);
 
         return jdbcTemplate.query(sql, new RowMapper<ListJob>() {
             @Override
@@ -66,6 +80,8 @@ public class DatabaseService {
                 job.setJobName(rs.getString("job_name"));
                 job.setStartDate(rs.getString("start_execution_date"));
                 job.setStepName(rs.getString("step_name"));
+
+
                 return job;
             }
         });
@@ -95,6 +111,8 @@ public class DatabaseService {
 
         JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId);
 
+
+
         return jdbcTemplate.query(sql, new RowMapper<ListJob>() {
             @Override
             public ListJob mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -105,9 +123,13 @@ public class DatabaseService {
                 job.setStartDate(rs.getString("start_execution_date"));
                 job.setStopDate(rs.getString("stop_execution_date"));
                 job.setExecutionTime(rs.getString("Execution_Time"));
+
                 return job;
             }
+
         });
+
+
     }
 
     /**
@@ -116,14 +138,21 @@ public class DatabaseService {
      * @param serverId ID del servidor para obtener los procesos.
      * @return Lista de procesos en ejecución.
      */
-    public List<ListWho5> listQuerys(int serverId) {
+    public List<ListWho5> listQuerys(int serverId, HttpServletRequest request) {
         List<ListWho5> listWho5 = new ArrayList<>();
+
+        ServerBD_Model server = serverBDRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+
+        String DBName = server.getServerDB();
+        String regionName = server.getRegion().getNameRegion();
 
         try {
             JdbcTemplate jdbcTemplate = getJdbcTemplate(serverId); // Obtiene el JdbcTemplate para el servidor especificado
 
             // Ejecuta el procedimiento almacenado sp_who5 usando JdbcTemplate
             String sql = "EXEC sp_who5";
+
 
             listWho5 = jdbcTemplate.query(sql, new RowMapper<ListWho5>() {
                 @Override
@@ -147,9 +176,13 @@ public class DatabaseService {
                     who5.setSchedulerId(rs.getString("scheduler_id"));
                     who5.setLastWaitType(rs.getString("LastWaitType"));
                     who5.setLoginTime(rs.getString("LoginTime"));
+
                     return who5;
                 }
+
             });
+
+            auditService.audit("Running queries, Region: "+regionName+ ", ServerId: "+serverId+ ", Database name: " +DBName, request);
         } catch (Exception ex) {
             throw new RuntimeException("Error al ejecutar el procedimiento sp_who5", ex);
         }

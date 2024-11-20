@@ -81,7 +81,7 @@ public class AuditService {
                     auditIn.getTicket(),
                     auditIn.getSKu(),
                     auditIn.getControlNo(),
-                    auditIn.getDateRecycling(),
+                    auditIn.getRecycleDate(),
                     userName, // Usando el nombre del usuario autenticado
                     auditIn.getAuthorizationFor(),
                     auditIn.getStatusPinBefore(),

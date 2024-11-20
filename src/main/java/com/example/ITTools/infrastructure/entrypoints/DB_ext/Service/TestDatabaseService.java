@@ -37,39 +37,35 @@ public class TestDatabaseService {
 
         for (ServerBD_Model server : servers) {
             CompletableFuture<List<BackupInfo>> future = CompletableFuture.supplyAsync(() -> {
-                List<BackupInfo> backupInfoList = new ArrayList<>();
                 try {
                     JdbcTemplate jdbcTemplate = getJdbcTemplate(server);
-                    String sqlScript = "SELECT Region, IP, Primary_Server, Secondary_Server, Primary_Database, " +
-                            "Last_Backup_Date, Last_Copied_Date, Last_Restored_Date, Status FROM BackupStatusTable";
-                    backupInfoList = jdbcTemplate.query(sqlScript, (ResultSet rs, int rowNum) -> {
-                        BackupInfo info = new BackupInfo();
-                        info.setRegion(rs.getString("Region"));
-                        info.setIp(rs.getString("IP"));
-                        info.setPrimaryServer(rs.getString("Primary_Server"));
-                        info.setSecondaryServer(rs.getString("Secondary_Server"));
-                        info.setPrimaryDatabase(rs.getString("Primary_Database"));
-                        info.setLastBackupDate(rs.getTimestamp("Last_Backup_Date").toLocalDateTime());
-                        info.setLastCopiedDate(rs.getTimestamp("Last_Copied_Date").toLocalDateTime());
-                        info.setLastRestoredDate(rs.getTimestamp("Last_Restored_Date").toLocalDateTime());
-                        info.setStatus(rs.getString("Status"));
-                        return info;
-                    });
+
+                    // Llamar al procedimiento almacenado SP_Check_LogShipping
+                    String sqlScript = "EXEC SP_Check_LogShipping";
+
+                    // Ejecutar el procedimiento almacenado
+                    jdbcTemplate.execute(sqlScript);
+
+                    // No hay resultados directos que mapear, pero puedes realizar otras acciones aquí si es necesario
                 } catch (Exception e) {
                     System.err.println("Error : " + server.getIpServer() + " - " + e.getMessage());
                 }
-                return backupInfoList;
+                return new ArrayList<>(); // Retornar una lista vacía ya que no hay datos directos
             });
             futures.add(future);
         }
 
-        List<BackupInfo> allBackupInfo = futures.stream()
-                .map(CompletableFuture::join)
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
+        // Esperar a que todas las tareas asíncronas se completen
+        futures.forEach(CompletableFuture::join);
 
-        return allBackupInfo;
+        // Aquí puedes retornar una lista vacía o realizar otra acción si es necesario
+        return new ArrayList<>();
     }
+
+        // Esperar a que todas las tareas asíncronas se completen y combinar los resultados
+
+
+
 
 
 }

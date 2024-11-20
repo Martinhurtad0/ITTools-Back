@@ -3,6 +3,7 @@ package com.example.ITTools.infrastructure.entrypoints.DB_ext.Controller;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Databases;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.Properties;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Service.PropertiesService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,12 +22,12 @@ public class PropertiesController {
     }
 
     @GetMapping("/list")
-    public List<Databases> getDatabases(@RequestParam int serverId) {
-        return propertiesService.listDatabases(serverId);
+    public List<Databases> getDatabases(@RequestParam int serverId, HttpServletRequest request) {
+        return propertiesService.listDatabases(serverId, request);
     }
 
     @GetMapping("/properties")
-    public List<Properties> getProperties(@RequestParam int serverId, @RequestParam String dataName) {
-        return propertiesService.listProperties(serverId, dataName);
+    public List<Properties> getProperties(@RequestParam int serverId, @RequestParam String dataName, HttpServletRequest request) {
+        return propertiesService.listProperties(serverId, dataName, request);
     }
 }
