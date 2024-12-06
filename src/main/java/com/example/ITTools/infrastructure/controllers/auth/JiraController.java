@@ -39,25 +39,78 @@ public class JiraController {
             String jiraUrl = "https://auth.atlassian.com/oauth/token";
             ResponseEntity<String> response = restTemplate.exchange(jiraUrl, HttpMethod.POST, request, String.class);
 
-            // Deserializar respuesta usando Jackson
+            // Deserializar la respuesta usando Jackson
             ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> jsonResponse = objectMapper.readValue(response.getBody(), Map.class);
 
-            // Extraer y mostrar el access_token
-            if (jsonResponse.containsKey("access_token")) {
-                String accessToken = (String) jsonResponse.get("access_token");
-                System.out.println("Access Token: " + accessToken);
-            } else {
-                System.out.println("Access Token not found in response.");
-            }
+            // Extraer y mostrar el access_token y refresh_token
+            String accessToken = (String) jsonResponse.get("access_token");
+            String refreshToken = (String) jsonResponse.get("refresh_token");
 
-            return ResponseEntity.ok(response.getBody());
+            if (accessToken != null && refreshToken != null) {
+                // Crear un mapa de respuesta para los tokens
+                Map<String, String> responseMap = new HashMap<>();
+                responseMap.put("access_token", accessToken);
+                responseMap.put("refresh_token", refreshToken);
+
+                return ResponseEntity.ok(objectMapper.writeValueAsString(responseMap));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Tokens not found in response.");
+            }
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Error fetching Jira access token: " + e.getMessage());
         }
     }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<String> refreshAccessToken(@RequestBody Map<String, String> requestBody) {
+        try {
+            // Validar el refresh token recibido
+            String refreshToken = requestBody.get("refresh_token");
+
+            String clientId = "WqIezgIRXTVMWie5sQpl0PZh1WcLxR9R";
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("grant_type", "refresh_token");
+            body.add("client_id", clientId);
+            body.add("client_secret", clientSecret);
+            body.add("refresh_token", refreshToken);  // Usar el refresh_token para obtener un nuevo access_token
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+            String jiraUrl = "https://auth.atlassian.com/oauth/token";
+            ResponseEntity<String> response = restTemplate.exchange(jiraUrl, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+
+            // Deserializar la respuesta de Jira
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> jsonResponse = objectMapper.readValue(response.getBody(), Map.class);
+
+            String accessToken = (String) jsonResponse.get("access_token");
+            String newRefreshToken = (String) jsonResponse.get("refresh_token");
+
+
+            if (accessToken != null && newRefreshToken != null) {
+                Map<String, String> responseMap = new HashMap<>();
+                responseMap.put("access_token", accessToken);
+                responseMap.put("refresh_token", newRefreshToken);
+
+                return ResponseEntity.ok(objectMapper.writeValueAsString(responseMap));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Tokens not found in response.");
+            }
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error refreshing Jira access token: " + e.getMessage());
+        }
+    }
+
+
 
     @PostMapping("/createIssue")
     public ResponseEntity<String> createIssue(
