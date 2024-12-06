@@ -3,6 +3,7 @@ package com.example.ITTools.infrastructure.config.security;
 import com.example.ITTools.infrastructure.adapters.jpa.user.repositories.JpaUserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -14,6 +15,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 
 import lombok.RequiredArgsConstructor;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Configuration
 @RequiredArgsConstructor
@@ -50,4 +54,7 @@ public class ApplicationConfig {
         return username -> jpaUserRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
+
+
+
 }

@@ -25,6 +25,9 @@ public class ServerBD_Model {
     private String ipServer;
 
     @Getter @Setter
+    private String ipServerSecondary;
+
+    @Getter @Setter
     private String portServer;
 
     @Getter @Setter
@@ -54,10 +57,12 @@ public class ServerBD_Model {
     // Convertir a DTO
     public ServerBD_DTO toDTO() {
         ServerBD_DTO dto = new ServerBD_DTO();
+
         dto.setIdServer(this.idServer);
         dto.setServerName(this.serverName);
         dto.setDescription(this.description);
         dto.setIpServer(this.ipServer);
+        dto.setIpServerSecondary(this.ipServerSecondary);
         dto.setPortServer(this.portServer);
         dto.setInstance(this.instance);
         dto.setServerDB(this.serverDB);
@@ -65,6 +70,7 @@ public class ServerBD_Model {
         dto.setPassword(this.password);
         dto.setRecyclingDB(this.recyclingDB);
         dto.setStatus(this.status);
+
         dto.setRegionId(this.region != null ? this.region.getIdRegion() : null);
         return dto;
     }

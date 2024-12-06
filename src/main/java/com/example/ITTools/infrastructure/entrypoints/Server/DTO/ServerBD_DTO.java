@@ -9,6 +9,7 @@ public class ServerBD_DTO {
     private String serverName;
     private String description;
     private String ipServer;
+    private String ipServerSecondary;
     private String portServer;
     private String instance;
     private String serverDB;
