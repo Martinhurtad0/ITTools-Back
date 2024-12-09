@@ -118,40 +118,37 @@ public class StatusBackupService {
         // Convertir a String en formato adecuado para SQL
         String formattedFechaSabado = lastSaturday.toString(); // Formato YYYY-MM-DD
 
+        // Aquí usamos la dirección IP como parte de la consulta
         String query = "SELECT \n" +
-                "    database_name, \n" +
-                "    backup_type = CASE \n" +
-                "        WHEN type = 'D' THEN 'Database' \n" +
-                "        WHEN type = 'L' THEN 'Log' \n" +
-                "        WHEN type = 'I' THEN 'Differential' \n" +
-                "        ELSE 'Other' \n" +
-                "    END, \n" +
-                "    backup_finish_date, \n" +
-                "    rownum = ROW_NUMBER() OVER (PARTITION BY database_name, type ORDER BY backup_finish_date DESC), \n" +
-                "    ISNULL(STR(ABS(DATEDIFF(day, GETDATE(), MAX(backup_finish_date)))), NULL) AS Days_Last_Backup, \n" +
-                "    CASE \n" +
-                "        WHEN MAX(CONVERT(datetime, backup_finish_date, 121)) < CONVERT(datetime, DATEADD(dd, -1, GETDATE()), 121) \n" +
-                "        THEN 'Check' \n" +
-                "        ELSE 'OK' \n" +
-                "    END AS Status \n" +
-                "FROM \n" +
-                "    [msdb].dbo.backupset \n" +
-                "WHERE \n" +
-                "    database_name NOT IN (\n" +
-                "        'master', 'model', 'msdb', 'tempdb', 'admbd', 'Billing', \n" +
-                "        'DBAudit', 'Conciliation', 'distribution', 'DBDBA', \n" +
-                "        'DBETopup', 'DBMonitor', 'EJBCA', 'SQLDW', 'DBML'\n" +
-                "    ) \n" +
-                "    AND database_name NOT LIKE ('%reportServer%') \n" +
-                "    AND database_name NOT LIKE ('%Archive%') \n" +
-                "    AND database_name NOT LIKE ('%back%') \n" +
-                "    AND (CONVERT(datetime, backup_start_date, 121) >= GETDATE() - 30) \n" +
-                "GROUP BY \n" +
-                "    database_name, \n" +
-                "    type, \n" +
-                "    backup_finish_date;\n";
+                "    database_name,\n" +
+                "    CASE type\n" +
+                "        WHEN 'D' THEN 'Database'\n" +
+                "        WHEN 'L' THEN 'Log'\n" +
+                "        WHEN 'I' THEN 'Differential'\n" +
+                "        ELSE 'Other'\n" +
+                "    END AS backup_type,\n" +
+                "    backup_finish_date,\n" +
+                "    ROW_NUMBER() OVER (\n" +
+                "        PARTITION BY database_name, type\n" +
+                "        ORDER BY backup_finish_date DESC\n" +
+                "    ) AS rownum,\n" +
+                "    ISNULL(STR(ABS(DATEDIFF(day, GETDATE(), MAX(backup_finish_date)))), NULL) AS Days_Last_Backup,\n" +
+                "    CASE\n" +
+                "        WHEN MAX(CONVERT(datetime, backup_finish_date, 121)) < CONVERT(datetime, DATEADD(dd, -1, GETDATE()), 121) THEN 'Check'\n" +
+                "        WHEN MAX(CONVERT(datetime, backup_finish_date, 121)) < '" + formattedFechaSabado + "' THEN 'Check'\n" +
+                "        ELSE 'OK' END AS Status\n" +
+                "FROM msdb.dbo.backupset\n" + // Sin servidor vinculado\n" +
+                "WHERE database_name NOT IN ('master', 'model', 'msdb', 'tempdb', 'admbd', 'Billing', 'DBAudit', 'Conciliation', 'distribution', 'DBDBA',\n" +
+                "                             'DBETopup', 'DBMonitor', 'EJBCA', 'SQLDW', 'DBML')\n" +
+                "AND database_name NOT LIKE '%reportServer%' \n" +
+                "AND database_name NOT LIKE '%Archive%' \n" +
+                "AND database_name NOT LIKE '%back%'\n" +
+                "AND (CONVERT(datetime, backup_start_date, 121) >= GETDATE() - 30)\n" +
+                "GROUP BY database_name, type, backup_finish_date";
+
 
         List<Map<String, Object>> results = jdbcTemplate.queryForList(query);
+
         if (results.isEmpty()) {
             System.out.println("La consulta no devolvió resultados para el servidor: " + ip);
         } else {
@@ -159,8 +156,8 @@ public class StatusBackupService {
             for (Map<String, Object> row : results) {
                 System.out.println(row);
             }
-
         }
+
         return results.stream().map(row -> {
             StatusBackupDatabase backup = new StatusBackupDatabase();
             backup.setIp(ip);
@@ -168,14 +165,11 @@ public class StatusBackupService {
             backup.setDatabaseName((String) row.get("database_name"));
             backup.setBackupFinishDate((Timestamp) row.get("backup_finish_date"));
             backup.setBackupType((String) row.get("backup_type"));
-
             backup.setDaysLastBackup((String) row.get("days_last_backup"));
             backup.setStatus((String) row.get("status"));
             return backup;
-
         }).collect(Collectors.toList());
     }
-
     private LocalDate getLastSaturday(LocalDate date) {
         // Restar días hasta llegar al sábado (DayOfWeek.SATURDAY es 6)
         int daysToSubtract = (date.getDayOfWeek().getValue() - DayOfWeek.SATURDAY.getValue() + 7) % 7;

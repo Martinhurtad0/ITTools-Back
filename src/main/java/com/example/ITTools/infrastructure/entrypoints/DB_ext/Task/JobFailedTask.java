@@ -11,7 +11,7 @@ public class JobFailedTask {
     @Autowired
     private JobFailedService jobFailedService;
 
-    @Scheduled(fixedRate = 360000)
+    @Scheduled(fixedRate = 19800000)
     public void executeJobFailed() {
         System.out.println("Iniciando tarea de verificación de Log Failed...");
         jobFailedService.checkJobFailed();
