@@ -12,7 +12,7 @@ public class StatusAlwaysTask {
     private StatusAlwaysService statusAlwaysService;
 
 
-
+    @Scheduled(fixedRate = 18600000)
     public void executeStatusAlways(){
         System.out.println("Iniciando tarea de verificación de Status Always...");
         statusAlwaysService. checkStatusAlways();

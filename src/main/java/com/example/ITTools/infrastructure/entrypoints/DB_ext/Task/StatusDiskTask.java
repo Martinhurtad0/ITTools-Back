@@ -10,7 +10,7 @@ public class StatusDiskTask {
     @Autowired
     private StatusDiskService statusDiskService;
 
-
+    @Scheduled(fixedRate = 20400000)
     public void executeStatusDisk(){
         System.out.println("Iniciando tarea de verificación de Status Disk...");
         statusDiskService.checkStatusDisk();
