@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 public class StatusDiskTask {
     @Autowired
     private StatusDiskService statusDiskService;
-
-    @Scheduled(fixedRate = 20400000)
+    //esta tarea se ejcuta todos los dias a las 4:40AM
+    @Scheduled(cron = "0 40 4 * * ?")
     public void executeStatusDisk(){
         System.out.println("Iniciando tarea de verificación de Status Disk...");
         statusDiskService.checkStatusDisk();

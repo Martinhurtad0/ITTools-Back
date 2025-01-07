@@ -13,9 +13,9 @@ public class LogShippingTask {
         this.logShippingService = logShippingService;
     }
 
-    // Ejecutar cada 24 horas (Expresión cron: a las 2:00 AM todos los días)
+    //esta tarea se ejcuta todos los dias a las 4:00AM
+    @Scheduled(cron = "0 0 4 * * ?")
 
-    @Scheduled(fixedRate = 19200000)
     public void executeLogShippingStatusCheck() {
         System.out.println("Iniciando tarea de verificación de Log Shipping...");
         logShippingService.checkLogShippingStatus();

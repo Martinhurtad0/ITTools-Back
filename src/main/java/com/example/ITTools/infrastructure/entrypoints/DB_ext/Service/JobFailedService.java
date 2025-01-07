@@ -19,6 +19,8 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,6 +42,9 @@ public class JobFailedService {
     public List<JobFailed> JobFailedAll(){
         return jobFailedRepository.findAll();
     }
+    public List<ErrorLog> findErrorsBySp(String sp) {
+        return errorLogRepository.findBySp(sp);
+    }
 
     @Transactional
     public void checkJobFailed() {
@@ -47,6 +52,7 @@ public class JobFailedService {
         System.out.println("Total servers found: " + servers.size());
 
         jobFailedRepository.deleteAll();
+        errorLogRepository.deleteBySp("SP_Check_Jobs_Failed");
 
         for (ServerBD_Model server : servers) {
             processServer(server);
@@ -63,27 +69,41 @@ public class JobFailedService {
             jobFailedRepository.saveAll(jobFailedList);
             System.out.println("Jobs failed saved for server satisfactorily: " + server.getIpServer());
         } catch (Exception ex) {
-            handleError(server, ex);
-            System.err.println("Error: " + ex.getMessage());
+            // Obtén el mensaje original del error
+            String originalMessage = ex.getMessage();
+
+            // Extrae la parte relevante del mensaje
+            String filteredMessage = extractRelevantErrorMessage(originalMessage);
+
+            // Maneja y registra el error
+            handleError(server, filteredMessage);
+
+            // Muestra el mensaje filtrado en consola
+            System.err.println("Server error " + server + ": " + filteredMessage);
         }
     }
 
+    private String extractRelevantErrorMessage(String message) {
+        // Expresión regular para buscar el mensaje después de "];"
+        String regex = "];\\s(.+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(message);
 
-
-    private void handleError(ServerBD_Model server, Exception ex) {
-
-        String description = ex.getMessage();
-        int maxLength = 100; // Longitud máxima deseada
-
-        if (description != null && description.length() > maxLength) {
-            description = description.substring(0, maxLength) + "..."; // Truncar y agregar '...'
+        if (matcher.find()) {
+            // Retorna la parte relevante del mensaje
+            return matcher.group(1).trim();
         }
+        // Si no coincide, retorna el mensaje original como respaldo
+        return message;
+    }
 
+
+    private void handleError(ServerBD_Model server, String filteredMessage) {
         ErrorLog errorLog = new ErrorLog();
         errorLog.setIp(server.getIpServer());
         errorLog.setServerName(server.getServerName());
         errorLog.setSp("SP_Check_Jobs_Failed");
-        errorLog.setDescription(description);
+        errorLog.setDescription(filteredMessage);
         errorLog.setTimestamp(LocalDateTime.now());
         errorLogRepository.save(errorLog);
     }
@@ -104,10 +124,10 @@ public class JobFailedService {
         try {
             // Realizar una consulta sencilla para verificar si la conexión funciona
             jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-            System.out.println("Conexión exitosa al servidor: " + server.getIpServer() + " databaseName: " + server.getServerDB());
+            System.out.println("Successful connection to server: " + server.getIpServer() + " databaseName: " + server.getServerDB());
         } catch (Exception e) {
             // Capturar cualquier error y lanzar una excepción detallada
-            throw new RuntimeException("Error al conectar con el servidor " + server.getIpServer() + " databaseName " + server.getServerDB() + ": " + e.getMessage(), e);
+            throw new RuntimeException("Error connecting to server: " + server.getIpServer() + " databaseName " + server.getServerDB() + ": " + e.getMessage(), e);
         }
 
         return jdbcTemplate;
@@ -144,9 +164,9 @@ public class JobFailedService {
         List<Map<String, Object>> results = jdbcTemplate.queryForList(query);
 
         if (results.isEmpty()) {
-            System.out.println("La consulta no devolvió resultados para el servidor: " + ip);
+            System.out.println("The query returned no results for the server: " + ip);
         } else {
-            System.out.println("Resultados obtenidos:");
+            System.out.println("Results obtained:");
             for (Map<String, Object> row : results) {
                 System.out.println(row);
             }

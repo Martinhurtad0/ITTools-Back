@@ -9,7 +9,6 @@ public class ServerBD_DTO {
     private String serverName;
     private String description;
     private String ipServer;
-    private String ipServerSecondary;
     private String portServer;
     private String instance;
     private String serverDB;
@@ -17,5 +16,7 @@ public class ServerBD_DTO {
     private String password;
     private String recyclingDB;
     private int status;
+    private int serverType;
+    private int logShipping;
     private Long regionId;
 }

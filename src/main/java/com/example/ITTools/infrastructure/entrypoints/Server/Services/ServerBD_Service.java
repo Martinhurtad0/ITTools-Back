@@ -76,8 +76,10 @@ public class ServerBD_Service {
         serverModel.setUserLogin(serverDTO.getUserLogin());
         serverModel.setPassword(serverDTO.getPassword());
         serverModel.setRecyclingDB(serverDTO.getRecyclingDB());
-        serverModel.setIpServerSecondary(serverDTO.getIpServerSecondary() );
+
         serverModel.setStatus(1);
+        serverModel.setLogShipping(serverDTO.getLogShipping());
+        serverModel.setServerType(serverDTO.getServerType());
         serverModel.setRegion(region);
 
         ServerBD_Model savedServer = serverRepository.save(serverModel);
@@ -106,21 +108,21 @@ public class ServerBD_Service {
 
         // Actualización del servidor
 
-        if (serverDTO.getIpServerSecondary() != null && !serverDTO.getIpServerSecondary().isBlank()) {
-            server.setIpServerSecondary(serverDTO.getIpServerSecondary());
-        }
+
 
 
         server.setUserLogin(serverDTO.getUserLogin());
         server.setDescription(serverDTO.getDescription());
         server.setServerName(serverDTO.getServerName());
         server.setIpServer(serverDTO.getIpServer());
-        server.setIpServerSecondary(serverDTO.getIpServerSecondary());
+
         server.setInstance(serverDTO.getInstance());
         server.setPassword(serverDTO.getPassword());
         server.setPortServer(serverDTO.getPortServer());
         server.setServerDB(serverDTO.getServerDB());
         server.setRecyclingDB(serverDTO.getRecyclingDB());
+        server.setServerType(serverDTO.getServerType());
+        server.setLogShipping(serverDTO.getLogShipping());
 
 
         if (serverDTO.getRegionId() != null) {

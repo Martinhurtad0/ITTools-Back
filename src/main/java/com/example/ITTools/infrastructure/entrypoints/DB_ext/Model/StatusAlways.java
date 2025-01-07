@@ -29,6 +29,9 @@ public class StatusAlways {
     private String replicaRole;
     @Setter
     @Getter
+    private String suspendReason;
+    @Setter
+    @Getter
 
     private String availabilityMode;
     @Setter

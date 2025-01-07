@@ -23,6 +23,7 @@ public class ErrorLog {
     @Getter @Setter
     private String sp;
     @Getter @Setter
+    @Column(length = 500)
     private String description;
     @Getter @Setter
     private LocalDateTime timestamp;

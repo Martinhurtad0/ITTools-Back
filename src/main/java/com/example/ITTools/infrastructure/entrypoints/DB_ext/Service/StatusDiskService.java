@@ -17,6 +17,8 @@ import javax.sql.DataSource;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,49 +34,81 @@ public class StatusDiskService {
    public  List<StatusDisk> statusDiskAll(){
        return statusDiskRepository.findAll();
    }
+
+
     @Transactional
     public void checkStatusDisk() {
         List<ServerBD_Model> servers = serverBDRepository.findAll();
         System.out.println("Total servers found: " + servers.size());
 
         statusDiskRepository.deleteAll();
+        errorLogRepository.deleteBySp("StatusDisk");
 
         for (ServerBD_Model server : servers) {
             processServer(server);
         }
     }
 
+    public List<ErrorLog> findErrorsBySp(String sp) {
+        return errorLogRepository.findBySp(sp);
+    }
+
+
     public void processServer(ServerBD_Model server) {
         try {
-            System.out.println("Processing server: " + server.getIpServer());
-            JdbcTemplate jdbcTemplate = getJdbcTemplate(server);
+            if(server.getServerType()==1) {
+                System.out.println("Processing server: " + server.getIpServer());
+                JdbcTemplate jdbcTemplate = getJdbcTemplate(server);
 
-            List<StatusDisk> statusDiskList = fetchStatusDisk(jdbcTemplate, server.getIpServer(), server.getServerName(),server);
-            // Guardar los datos
-            statusDiskRepository.saveAll(statusDiskList);
-            System.out.println(" Status Disk saved for server satisfactorily: " + server.getIpServer());
-        } catch (Exception ex) {
-            handleError(server, ex);
-            System.err.println("Error: " + ex.getMessage());
+                List<StatusDisk> statusDiskList = fetchStatusDisk(jdbcTemplate, server.getIpServer(), server.getServerName(), server);
+                // Guardar los datos
+                statusDiskRepository.saveAll(statusDiskList);
+                System.out.println(" Status Disk saved for server satisfactorily: " + server.getIpServer());
+           }
+        }catch (Exception ex) {
+            // Obtén el mensaje original del error
+            String originalMessage = ex.getMessage();
+
+            // Extrae la parte relevante del mensaje
+            String filteredMessage = extractRelevantErrorMessage(originalMessage);
+
+            // Maneja y registra el error
+            handleError(server, filteredMessage);
+
+            // Muestra el mensaje filtrado en consola
+            System.err.println("Server error: " + server + ": " + filteredMessage);
         }
+
+    }
+
+    private String extractRelevantErrorMessage(String message) {
+        // Expresión regular para buscar el mensaje después de "];"
+        String regex = "];\\s(.+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(message);
+
+        if (matcher.find()) {
+            // Retorna la parte relevante del mensaje
+            return matcher.group(1).trim();
+        }
+        // Si no coincide, retorna el mensaje original como respaldo
+        return message;
     }
 
 
 
-    private void handleError(ServerBD_Model server, Exception ex) {
+    private void handleError(ServerBD_Model server, String filteredMessage) {
 
-        String description = ex.getMessage();
-        int maxLength = 100; // Longitud máxima deseada
 
-        if (description != null && description.length() > maxLength) {
-            description = description.substring(0, maxLength) + "..."; // Truncar y agregar '...'
-        }
-
+        // Crea el objeto de registro de error
         ErrorLog errorLog = new ErrorLog();
+        errorLog.setIp(server.getIpServer());
         errorLog.setServerName(server.getServerName());
         errorLog.setSp("StatusDisk");
-        errorLog.setDescription(description);
+        errorLog.setDescription(filteredMessage); // Almacena el mensaje filtrado
         errorLog.setTimestamp(LocalDateTime.now());
+
+        // Guarda el error en la base de datos
         errorLogRepository.save(errorLog);
     }
 
@@ -94,10 +128,10 @@ public class StatusDiskService {
         try {
             // Realizar una consulta sencilla para verificar si la conexión funciona
             jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-            System.out.println("Conexión exitosa al servidor: " + server.getIpServer() + " databaseName: " + server.getServerDB());
+            System.out.println("Successful connection to server: " + server.getIpServer() + " databaseName: " + server.getServerDB());
         } catch (Exception e) {
             // Capturar cualquier error y lanzar una excepción detallada
-            throw new RuntimeException("Error al conectar con el servidor " + server.getIpServer() + " databaseName " + server.getServerDB() + ": " + e.getMessage(), e);
+            throw new RuntimeException("Error connecting to server" + server.getIpServer() + " databaseName " + server.getServerDB() + ": " + e.getMessage(), e);
         }
 
         return jdbcTemplate;
@@ -120,9 +154,9 @@ public class StatusDiskService {
         List<Map<String, Object>> results = jdbcTemplate.queryForList(query);
 
         if (results.isEmpty()) {
-            System.out.println("La consulta no devolvió resultados para el servidor: " + ip);
+            System.out.println("The query returned no results for the server: " + ip);
         } else {
-            System.out.println("Resultados obtenidos:");
+            System.out.println("Results obtained:");
             for (Map<String, Object> row : results) {
                 System.out.println(row);
             }

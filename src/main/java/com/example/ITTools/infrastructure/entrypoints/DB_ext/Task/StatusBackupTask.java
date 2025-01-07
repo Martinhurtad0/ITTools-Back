@@ -12,8 +12,9 @@ public class StatusBackupTask {
     private StatusBackupService statusBackupService;
 
 
-    @Scheduled(fixedRate = 18000000) // 5 horas en milisegundos (5 * 60 * 60 * 1000)
-    public void executeStatusBackup(){
+    //esta tarea se ejcuta todos los dias a las 4:30AM
+   @Scheduled(cron = "0 30 4 * * ?")
+   public void executeStatusBackup(){
         System.out.println("Iniciando tarea de verificación de Status Backup...");
         statusBackupService.checkStatusBackup();
         System.out.println("Tarea de Status Backup verificación completada.");

@@ -24,8 +24,7 @@ public class ServerBD_Model {
     @Getter @Setter
     private String ipServer;
 
-    @Getter @Setter
-    private String ipServerSecondary;
+
 
     @Getter @Setter
     private String portServer;
@@ -49,6 +48,12 @@ public class ServerBD_Model {
     @Getter @Setter
     private int status;
 
+    @Getter @Setter
+    private int serverType;
+
+    @Getter @Setter
+    private int logShipping;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "region_id")
     @Getter @Setter
@@ -62,7 +67,7 @@ public class ServerBD_Model {
         dto.setServerName(this.serverName);
         dto.setDescription(this.description);
         dto.setIpServer(this.ipServer);
-        dto.setIpServerSecondary(this.ipServerSecondary);
+
         dto.setPortServer(this.portServer);
         dto.setInstance(this.instance);
         dto.setServerDB(this.serverDB);
@@ -70,6 +75,9 @@ public class ServerBD_Model {
         dto.setPassword(this.password);
         dto.setRecyclingDB(this.recyclingDB);
         dto.setStatus(this.status);
+        dto.setLogShipping(this.logShipping);
+        dto.setServerType(this.serverType);
+
 
         dto.setRegionId(this.region != null ? this.region.getIdRegion() : null);
         return dto;

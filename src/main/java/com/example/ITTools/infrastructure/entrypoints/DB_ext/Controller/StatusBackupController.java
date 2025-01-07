@@ -1,14 +1,13 @@
 package com.example.ITTools.infrastructure.entrypoints.DB_ext.Controller;
 
 
+import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.ErrorLog;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.StatusBackupDatabase;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Service.StatusBackupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -23,6 +22,12 @@ public class StatusBackupController {
     @ResponseStatus(HttpStatus.OK)
     public List<StatusBackupDatabase> getStatusBackup() {
         return  statusBackupService.statusBackupAll();
+    }
+
+    @GetMapping("/{sp}")
+    public ResponseEntity<List<ErrorLog>> getErrorsBySp(@PathVariable String sp) {
+        List<ErrorLog> errors = statusBackupService.findErrorsBySp(sp);
+        return ResponseEntity.ok(errors);
     }
 
 

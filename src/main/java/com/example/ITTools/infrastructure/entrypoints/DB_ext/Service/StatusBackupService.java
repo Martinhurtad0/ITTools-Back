@@ -20,6 +20,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -39,10 +41,16 @@ public class StatusBackupService {
          return  statusBackupRepository.findAll();
      }
 
+
+    public List<ErrorLog> findErrorsBySp(String sp) {
+        return errorLogRepository.findBySp(sp);
+    }
+
      @Transactional
      public void checkStatusBackup(){
          List<ServerBD_Model> servers = serverBDRepository.findAll();
         statusBackupRepository.deleteAll();
+        errorLogRepository.deleteBySp("StatusBackUpDatabase");
 
         for (ServerBD_Model server: servers){
             processServer(server);
@@ -53,38 +61,60 @@ public class StatusBackupService {
 
      public void processServer (ServerBD_Model server){
          try {
-             System.out.println("Processing server: " + server.getIpServer());
-             JdbcTemplate jdbcTemplate = getJdbcTemplate(server);
-             List<StatusBackupDatabase> statusBackup= fetchStatusBackup(jdbcTemplate,server.getIpServer(), server.getServerName());
-             statusBackupRepository.saveAll(statusBackup);
-             System.out.println("Status Back Up saved for server  satisfactorily: "+ server.getIpServer());
+             if(server.getServerType()==1) {
+                 System.out.println("Processing server: " + server.getIpServer());
+                 JdbcTemplate jdbcTemplate = getJdbcTemplate(server);
+                 List<StatusBackupDatabase> statusBackup = fetchStatusBackup(jdbcTemplate, server.getIpServer(), server.getServerName());
+                 statusBackupRepository.saveAll(statusBackup);
+                 System.out.println("Status Back Up saved for server  satisfactorily: " + server.getIpServer());
+             }
 
-         } catch (Exception ex){
-             handleError(server, ex);
-             System.err.println("Error: " + ex.getMessage());
+         } catch (Exception ex) {
+             // Obtén el mensaje original del error
+             String originalMessage = ex.getMessage();
+
+             // Extrae la parte relevante del mensaje
+             String filteredMessage = extractRelevantErrorMessage(originalMessage);
+
+             // Maneja y registra el error
+             handleError(server, filteredMessage);
+
+             // Muestra el mensaje filtrado en consola
+             System.err.println("Server error " + server + ": " + filteredMessage);
          }
+
      }
 
 
+    private String extractRelevantErrorMessage(String message) {
+        // Expresión regular para buscar el mensaje después de "];"
+        String regex = "];\\s(.+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(message);
 
-    private void handleError(ServerBD_Model server, Exception ex) {
-
-        String description = ex.getMessage();
-        int maxLength = 100; // Longitud máxima deseada
-
-        if (description != null && description.length() > maxLength) {
-            description = description.substring(0, maxLength) + "..."; // Truncar y agregar '...'
+        if (matcher.find()) {
+            // Retorna la parte relevante del mensaje
+            return matcher.group(1).trim();
         }
+        // Si no coincide, retorna el mensaje original como respaldo
+        return message;
+    }
+
+
+
+    private void handleError(ServerBD_Model server, String filteredMessage) {
+
+
 
         ErrorLog errorLog = new ErrorLog();
         errorLog.setIp(server.getIpServer());
         errorLog.setServerName(server.getServerName());
         errorLog.setSp("StatusBackUpDatabase");
-        errorLog.setDescription(description);
+        errorLog.setDescription(filteredMessage);
 
         errorLog.setTimestamp(LocalDateTime.now());
         errorLogRepository.save(errorLog);
-        System.err.println("Error: " + ex.getMessage());
+
     }
 
     private JdbcTemplate getJdbcTemplate(ServerBD_Model server) {
@@ -100,10 +130,10 @@ public class StatusBackupService {
         try {
             // Realizar una consulta sencilla para verificar si la conexión funciona
             jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-            System.out.println("Conexión exitosa al servidor: " + server.getIpServer() + " databaseName: " + server.getServerDB());
+            System.out.println("Successful connection to server " + server.getIpServer() + " databaseName: " + server.getServerDB());
         } catch (Exception e) {
             // Capturar cualquier error y lanzar una excepción detallada
-            throw new RuntimeException("Error al conectar con el servidor " + server.getIpServer() + " databaseName " + server.getServerDB() + ": " + e.getMessage(), e);
+            throw new RuntimeException("Error connecting to server " + server.getIpServer() + " databaseName " + server.getServerDB() + ": " + e.getMessage(), e);
         }
 
         return jdbcTemplate;
@@ -112,52 +142,60 @@ public class StatusBackupService {
 
 
     private List<StatusBackupDatabase> fetchStatusBackup(JdbcTemplate jdbcTemplate, String ip, String serverName) {
-        // Calcular el último sábado
-        LocalDate lastSaturday = getLastSaturday(LocalDate.now());
-
-        // Convertir a String en formato adecuado para SQL
-        String formattedFechaSabado = lastSaturday.toString(); // Formato YYYY-MM-DD
-
-        // Aquí usamos la dirección IP como parte de la consulta
-        String query = "SELECT \n" +
-                "    database_name,\n" +
-                "    CASE type\n" +
-                "        WHEN 'D' THEN 'Database'\n" +
-                "        WHEN 'L' THEN 'Log'\n" +
-                "        WHEN 'I' THEN 'Differential'\n" +
-                "        ELSE 'Other'\n" +
-                "    END AS backup_type,\n" +
-                "    backup_finish_date,\n" +
-                "    ROW_NUMBER() OVER (\n" +
-                "        PARTITION BY database_name, type\n" +
-                "        ORDER BY backup_finish_date DESC\n" +
-                "    ) AS rownum,\n" +
-                "    ISNULL(STR(ABS(DATEDIFF(day, GETDATE(), MAX(backup_finish_date)))), NULL) AS Days_Last_Backup,\n" +
-                "    CASE\n" +
-                "        WHEN MAX(CONVERT(datetime, backup_finish_date, 121)) < CONVERT(datetime, DATEADD(dd, -1, GETDATE()), 121) THEN 'Check'\n" +
-                "        WHEN MAX(CONVERT(datetime, backup_finish_date, 121)) < '" + formattedFechaSabado + "' THEN 'Check'\n" +
-                "        ELSE 'OK' END AS Status\n" +
-                "FROM msdb.dbo.backupset\n" + // Sin servidor vinculado\n" +
-                "WHERE database_name NOT IN ('master', 'model', 'msdb', 'tempdb', 'admbd', 'Billing', 'DBAudit', 'Conciliation', 'distribution', 'DBDBA',\n" +
-                "                             'DBETopup', 'DBMonitor', 'EJBCA', 'SQLDW', 'DBML')\n" +
-                "AND database_name NOT LIKE '%reportServer%' \n" +
-                "AND database_name NOT LIKE '%Archive%' \n" +
-                "AND database_name NOT LIKE '%back%'\n" +
-                "AND (CONVERT(datetime, backup_start_date, 121) >= GETDATE() - 30)\n" +
-                "GROUP BY database_name, type, backup_finish_date";
 
 
+        // Consulta SQL con filtro para obtener solo el respaldo más reciente
+        String query = "WITH backup_cte AS (\n" +
+                "    SELECT \n" +
+                "        database_name,\n" +
+                "        CASE type\n" +
+                "            WHEN 'D' THEN 'Database'\n" +
+                "            WHEN 'L' THEN 'Log'\n" +
+                "            WHEN 'I' THEN 'Differential'\n" +
+                "            ELSE 'Other'\n" +
+                "        END AS backup_type,\n" +
+                "        backup_finish_date,\n" +
+                "        ROW_NUMBER() OVER (\n" +
+                "            PARTITION BY database_name, type\n" +
+                "            ORDER BY backup_finish_date DESC\n" +
+                "        ) AS rownum,\n" +
+                "        ABS(DATEDIFF(day, GETDATE(), backup_finish_date)) AS Days_Last_Backup,\n" +
+                "        CASE\n" +
+                "            WHEN MAX(backup_finish_date) OVER (PARTITION BY database_name) < DATEADD(day, -1, GETDATE()) \n" +
+                "                 AND EXISTS (SELECT 1 FROM msdb.dbo.backupset AS bs WHERE bs.database_name = backupset.database_name)\n" +
+                "            THEN 'Check'\n" +
+                "            WHEN MAX(backup_finish_date) OVER (PARTITION BY database_name) < '2024-12-14'\n" +
+                "            THEN 'Check'\n" +
+                "            ELSE 'OK'\n" +
+                "        END AS status\n" +
+                "    FROM msdb.dbo.backupset AS backupset\n" +
+                "    WHERE database_name NOT IN ('master', 'model', 'msdb', 'tempdb', 'admbd', 'Billing', 'DBAudit', 'Conciliation', 'distribution', 'DBDBA',\n" +
+                "                                 'DBETopup', 'DBMonitor', 'EJBCA', 'SQLDW', 'DBML')\n" +
+                "      AND database_name NOT LIKE '%reportServer%'\n" +
+                "      AND database_name NOT LIKE '%Archive%'\n" +
+                "      AND database_name NOT LIKE '%back%'\n" +
+                "      AND backup_start_date >= DATEADD(day, -30, GETDATE())\n" +
+                ")\n" +
+                "SELECT \n" +
+                "    database_name, backup_type, backup_finish_date, Days_Last_Backup, status\n" +
+                "FROM backup_cte\n" +
+                "WHERE rownum = 1\n" +
+                "ORDER BY database_name;\n";
+
+        // Ejecutar la consulta
         List<Map<String, Object>> results = jdbcTemplate.queryForList(query);
 
+        // Validar si no hay resultados
         if (results.isEmpty()) {
-            System.out.println("La consulta no devolvió resultados para el servidor: " + ip);
+            System.out.println("The query returned no results for the server:" + ip);
         } else {
-            System.out.println("Resultados obtenidos:");
+            System.out.println("Results obtained:");
             for (Map<String, Object> row : results) {
                 System.out.println(row);
             }
         }
 
+        // Mapear resultados a la lista de objetos StatusBackupDatabase
         return results.stream().map(row -> {
             StatusBackupDatabase backup = new StatusBackupDatabase();
             backup.setIp(ip);
@@ -165,14 +203,12 @@ public class StatusBackupService {
             backup.setDatabaseName((String) row.get("database_name"));
             backup.setBackupFinishDate((Timestamp) row.get("backup_finish_date"));
             backup.setBackupType((String) row.get("backup_type"));
-            backup.setDaysLastBackup((String) row.get("days_last_backup"));
+            backup.setDaysLastBackup(row.get("Days_Last_Backup").toString());
             backup.setStatus((String) row.get("status"));
             return backup;
         }).collect(Collectors.toList());
     }
-    private LocalDate getLastSaturday(LocalDate date) {
-        // Restar días hasta llegar al sábado (DayOfWeek.SATURDAY es 6)
-        int daysToSubtract = (date.getDayOfWeek().getValue() - DayOfWeek.SATURDAY.getValue() + 7) % 7;
-        return date.minusDays(daysToSubtract);
-    }
+
+
+
 }

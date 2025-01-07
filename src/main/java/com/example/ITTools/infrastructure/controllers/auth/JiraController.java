@@ -1,12 +1,14 @@
 package com.example.ITTools.infrastructure.controllers.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import net.minidev.json.JSONObject;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,13 +18,28 @@ import java.util.Map;
 @RequestMapping("/jira")
 public class JiraController {
 
+
+
+    @Value("${google.client.id}")
+    private String clientId;
+
+    @Value("${google.client.secret}")
+    private String clientSecret;
+
+    @Value("${google.redirect.uri}")
+    private String redirectUri;
+
+
+
     @PostMapping("/token")
     public ResponseEntity<String> authenticateWithJira(@RequestBody Map<String, String> requestBody) {
         try {
             String code = requestBody.get("code");
 
-            String clientId = "WqIezgIRXTVMWie5sQpl0PZh1WcLxR9R";
-            String redirectUri = "http://localhost:5173/uikit/Support";
+            System.out.println("Client ID: " + clientId);
+            System.out.println("Client Secret: " + clientSecret);
+            System.out.println("Redirect URI: " + redirectUri);
+            System.out.println("Authorization Code: " + requestBody.get("code"));
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
             body.add("grant_type", "authorization_code");
@@ -70,7 +87,7 @@ public class JiraController {
             // Validar el refresh token recibido
             String refreshToken = requestBody.get("refresh_token");
 
-            String clientId = "WqIezgIRXTVMWie5sQpl0PZh1WcLxR9R";
+
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
             body.add("grant_type", "refresh_token");

@@ -1,6 +1,7 @@
 package com.example.ITTools.infrastructure.entrypoints.DB_ext.Controller;
 
 
+import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.ErrorLog;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Model.LogShippingStatus;
 import com.example.ITTools.infrastructure.entrypoints.DB_ext.Service.LogShippingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,12 @@ public class LogShippingController {
     @ResponseStatus(HttpStatus.OK)
     public List<LogShippingStatus> getLogShippingStatus() {
         return logShippingService.getAll();
+    }
+
+    @GetMapping("/{sp}")
+    public ResponseEntity<List<ErrorLog>> getErrorsBySp(@PathVariable String sp) {
+        List<ErrorLog> errors = logShippingService.findErrorsBySp(sp);
+        return ResponseEntity.ok(errors);
     }
 
     /**

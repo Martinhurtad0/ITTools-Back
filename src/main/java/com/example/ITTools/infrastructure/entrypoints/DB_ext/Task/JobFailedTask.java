@@ -10,8 +10,8 @@ public class JobFailedTask {
 
     @Autowired
     private JobFailedService jobFailedService;
-
-    @Scheduled(fixedRate = 19800000)
+ //esta tarea se ejcuta todos los dias a las 4:10AM
+    @Scheduled(cron = "0 10 4 * * ?")
     public void executeJobFailed() {
         System.out.println("Iniciando tarea de verificación de Log Failed...");
         jobFailedService.checkJobFailed();

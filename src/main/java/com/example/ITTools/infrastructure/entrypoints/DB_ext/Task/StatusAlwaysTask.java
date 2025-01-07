@@ -12,7 +12,8 @@ public class StatusAlwaysTask {
     private StatusAlwaysService statusAlwaysService;
 
 
-    @Scheduled(fixedRate = 18600000)
+    //esta tarea se ejcuta todos los dias a las 4:20AM
+    @Scheduled(cron = "0 20 4 * * ?")
     public void executeStatusAlways(){
         System.out.println("Iniciando tarea de verificación de Status Always...");
         statusAlwaysService. checkStatusAlways();
